@@ -1,0 +1,27 @@
+general architecture plan:
+
+init:
+-read in data from configuration file and store it for future use
+-initialize the GUI and display it
+
+microscope:
+-object that contains all necessary information about the system
+-contains:
+  -corner positions
+  -number of wells per position
+  -z offset (for taking photos)
+  -number of photos (for taking photos)
+  -zoom (current zoom amount)
+  -current position
+  -sample ID (substance identifier)
+  -plate ID 
+  -height/width of plate in "wells"
+  
+ read/write config:
+ -read and write configuration file, mostly used to update
+ current configuration file (e.g. corner position)
+ 
+ GUI:
+ -series of button callback functions for completing tasks and 
+ updating system information
+ -see picture for what buttons are included in GUI (for now)
