@@ -24,10 +24,54 @@ lighting1=False;lighting2=False
 Ualphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ'; Lalphabet='abcdefghijklmnopqrstuvwxyz'
 alphabet=[]
 
-print('\n Bonjour, ami \n')
-if not os.path.isdir("images"): # check to be sure images directory exists
-   print( "\"images\" directory (or symbolic link) not found. \n This should be in the same directory as this program. \n You need to create the directory or fix the link before continuing. \n i.e. mkdir images")
-   sys.exit()
+def main():
+    print('\n Bonjour, ami \n')
+    if not os.path.isdir("images"): # check to be sure images directory exists
+        print('"images" directory (or symbolic link) not found. \n' +
+             'This should be in the same directory as this program. \n' +
+             'You need to create the directory or fix the link before continuing. \n' +
+             'i.e. mkdir images')
+        sys.exit()
+    read_config()
+
+    # camera setup
+    camera = PiCamera()
+    camera.resolution=(1640,1232)
+    camera.iso=50 # nnot sure this does anytihng
+
+    #light1 and light2 setup - this is controled by gpio pins 17 and 18 on the pi
+    #the light2 button also controls the 24V output of the arduino
+    #gpio 27 is used to tell the pi when the arduino has fininished moving
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
+    GPIO.setup(17,GPIO.OUT) #controls light 1
+    GPIO.setup(18,GPIO.OUT) #controls light 2
+    GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) # signal for movement completion
+
+    # connect to the arduino and set zero 
+    s = serial.Serial('/dev/ttyUSB0',115200) # open grbl serial port
+    s.write(("\r\n\r\n").encode('utf-8')) # Wake up grbl
+    sleep(2)   # Wait for grbl to initialize
+    s.flushInput()  # Flush startup text in serial input
+    s.write(('$21=1 \n').encode('utf-8')) # enable hard limits
+    print(' ok so far...')
+    s.write(('$H \n').encode('utf-8')) # tell grbl to find zero 
+    grbl_out = s.readline() # Wait for grbl response with carriage return
+    s.write(('? \n').encode('utf-8')) # Send g-code block to grbl
+    response = s.readline().decode('utf-8') # Wait for grbl response with carriage return
+    response=response.replace(":",","); response=response.replace(">",""); response=response.replace("<","")
+    a_list=response.split(",")
+    #print(a_list)
+    wx=float(a_list[6]); wy=float(a_list[7]); wz=float(a_list[8])
+    if wx==-199.0:
+        s.write(('G10 L2 P1 X '+str(wx)+' Y '+str(wy)+' Z '+str(wz)+' \n').encode('utf-8')) # ensures that zero is zero and not -199.0, -199.0, -199.0 
+        grbl_out = s.readline() # Wait for grbl response with carriage return
+    s.write(('m8 \n').encode('utf-8')) # set pin A3 high -used later to detect end of movement 
+    print(' You\'ll probably want to click VIEW and turn on some lights at this point. \n Then you may want to check the alignment of the four corner samples')
+    s.write(('$x \n').encode('utf-8')) # unlock so spindle power can engage for light2 
+    grbl_out = s.readline() # Wait for grbl response with carriage return
+    s.write(('s1000 \n').encode('utf-8')) # set max spindle volocity
+    grbl_out = s.readline() # Wait for grbl response with carriage return
 
 def read_config():  # read information from the configuration file
     global tl,tr,bl,br,nx,ny,samps,zstep,nimages,nroot,sID,filee,alphabet,samp_coord
@@ -64,22 +108,6 @@ def read_config():  # read information from the configuration file
         print('File error.')
         f.close()
         if fname=='AMi.config': sys.exit()
-read_config()
-
-# camera setup
-camera = PiCamera()
-camera.resolution=(1640,1232)
-camera.iso=50 # nnot sure this does anytihng
-
-#light1 and light2 setup - this is controled by gpio pins 17 and 18 on the pi
-#the light2 button also controls the 24V output of the arduino
-#gpio 27 is used to tell the pi when the arduino has fininished moving
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
-GPIO.setup(17,GPIO.OUT) #controls light 1
-GPIO.setup(18,GPIO.OUT) #controls light 2
-GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) # signal for movement completion
-
 
 def tdate(): # get the current date as a nice string
    dstr=(datetime.now().strftime('%h-%d-%Y_%I:%M%p')) 
@@ -95,31 +123,6 @@ def wait_for_Idle(): # wait for grbl to complete movement -new version wait for 
       sleep(0.1)
    s.write(('m8 \n').encode('utf-8')) # set pin A3 high 
 #   print('our long wait has ended')
-   
-# connect to the arduino and set zero 
-s = serial.Serial('/dev/ttyUSB0',115200) # open grbl serial port
-s.write(("\r\n\r\n").encode('utf-8')) # Wake up grbl
-sleep(2)   # Wait for grbl to initialize
-s.flushInput()  # Flush startup text in serial input
-s.write(('$21=1 \n').encode('utf-8')) # enable hard limits
-print(' ok so far...')
-s.write(('$H \n').encode('utf-8')) # tell grbl to find zero 
-grbl_out = s.readline() # Wait for grbl response with carriage return
-s.write(('? \n').encode('utf-8')) # Send g-code block to grbl
-response = s.readline().decode('utf-8') # Wait for grbl response with carriage return
-response=response.replace(":",","); response=response.replace(">",""); response=response.replace("<","")
-a_list=response.split(",")
-#print(a_list)
-wx=float(a_list[6]); wy=float(a_list[7]); wz=float(a_list[8])
-if wx==-199.0:
-  s.write(('G10 L2 P1 X '+str(wx)+' Y '+str(wy)+' Z '+str(wz)+' \n').encode('utf-8')) # ensures that zero is zero and not -199.0, -199.0, -199.0 
-  grbl_out = s.readline() # Wait for grbl response with carriage return
-s.write(('m8 \n').encode('utf-8')) # set pin A3 high -used later to detect end of movement 
-print(' You\'ll probably want to click VIEW and turn on some lights at this point. \n Then you may want to check the alignment of the four corner samples')
-s.write(('$x \n').encode('utf-8')) # unlock so spindle power can engage for light2 
-grbl_out = s.readline() # Wait for grbl response with carriage return
-s.write(('s1000 \n').encode('utf-8')) # set max spindle volocity
-grbl_out = s.readline() # Wait for grbl response with carriage return
              
 def update_b(event): # write parameters to the configuration file
     global tl,tr,bl,br,nx,ny,zstep,nimages,nroot,sID,filee,fname,alphabet,samps
@@ -846,3 +849,6 @@ GPIO.output(18, GPIO.LOW) #turn off light2
 s.write(('m5 \n').encode('utf-8')) #turn off light2
 s.close() # Close serial port 
 camera.stop_preview() # stop preview
+
+if __name__ == "__main__":
+    main()

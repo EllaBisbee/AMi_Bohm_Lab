@@ -1,3 +1,6 @@
+TODO:
+  Use pip for dependencies
+
 general architecture plan:
 
 init:
