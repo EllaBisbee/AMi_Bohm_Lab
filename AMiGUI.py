@@ -5,6 +5,7 @@ from shutil import copyfile
 from picamera import PiCamera
 import numpy as np, RPi.GPIO as GPIO
 import re, sys, os
+from Config import Config
 
 camera_delay=.2 # delay, in seconds, that the system should sit idle before each image 
 fracbelow=0.5 # this is the fraction of zrange below the expected plane of focus
@@ -23,6 +24,7 @@ viewing=False; running=False; stopit=False
 lighting1=False;lighting2=False
 Ualphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ'; Lalphabet='abcdefghijklmnopqrstuvwxyz'
 alphabet=[]
+config = None
 
 def main():
     print('\n Bonjour, ami \n')
@@ -74,39 +76,24 @@ def main():
     grbl_out = s.readline() # Wait for grbl response with carriage return
 
 def read_config():  # read information from the configuration file
-    global tl,tr,bl,br,nx,ny,samps,zstep,nimages,nroot,sID,filee,alphabet,samp_coord
+    global tl,tr,bl,br,nx,ny,samps,zstep,nimages,nroot,sID,filee,alphabet,samp_coord,config
     try:
-        f=open(fname,'r')
-        jnk=list(map(int,(re.findall(r'\S+', (f.readline()).split('#', 1)[0]))))
-        nx=jnk[0]; ny=jnk[1]; samps=jnk[2]
-        tl=np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
-        tr=np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
-        bl=np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
-        br=np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
-        samp_coord=[]
-        for i in range(samps):
-            samp_coord.append(list(map(float,(re.findall(r'\S+',f.readline().split('#', 1)[0])))))
-        zstep=float((f.readline()).split('#', 1)[0])
-        nimages=int((f.readline()).split('#', 1)[0])
-        sID=(f.readline()).split('#', 1)[0]
-        sID=sID.replace("\n",""); sID=sID.replace(" ","")
-        nroot=(f.readline()).split('#', 1)[0]
-        nroot=nroot.replace("\n",""); nroot=nroot.replace(" ","")
-        alphabet=Ualphabet[0:ny]+Lalphabet[0:ny]
+        config = Config(fname)
+        nx = config.nx
+        ny = config.ny
+        samps = config.samps
+        tl = config.tl
+        tr = config.tr
+        bl = config.bl
+        br = config.br
+        samp_coord = config.samp_coord
+        zstep = config.zstep
+        nimages = config.nimages
+        sID = config.sID
+        nroot = config.nroot
+        alphabet = config.alphabet
     except:
-        print(' The configuration file was missing or the format was not right. It should look something like this:')
-        print('  12   8    1        # number of positions along x and y and on the plate then number of samples at each position') 
-        print('  134.2  29.3  7.5   # coordinates of the top left drop')
-        print('   35.2  28.7  7.3   # coordinates of the top right drop')
-        print('  133.5  92.9  7.1   # coordinates of the bottom left drop')
-        print('   35.0  91.9  7.0   # coordinates of the bottom right drop')
-        print('    0.    0.         # offsets for each sample (first sample is always 0. 0.)')
-        print('   0.3               # image spacing in z')
-        print('   4                 # number of images per drop')
-        print('   AMi_sample        # sample name (no spaces)')
-        print('   AB_xs2            # plate name (no spaces)')
-        print('File error.')
-        f.close()
+        config.print_help()
         if fname=='AMi.config': sys.exit()
 
 def tdate(): # get the current date as a nice string

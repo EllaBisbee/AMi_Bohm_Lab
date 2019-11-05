@@ -56,7 +56,7 @@ class Config():
         Lalphabet='abcdefghijklmnopqrstuvwxyz'
         
         try:
-            f = open(fname, 'r')
+            f = open(fname, 'r') # TODO: convert to with
             jnk = list(map(int,(re.findall(r'\S+', (f.readline()).split('#', 1)[0]))))
             self.nx = jnk[0]
             self.ny = jnk[1]
