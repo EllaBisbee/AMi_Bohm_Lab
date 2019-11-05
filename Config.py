@@ -57,34 +57,35 @@ class Config():
         
         try:
             with open(fname, 'r') as f:
-                jnk = list(map(int,(re.findall(r'\S+', (f.readline()).split('#', 1)[0]))))
-                self.nx = jnk[0]
-                self.ny = jnk[1]
-                self.samps = jnk[2]
-
-                self.tl = np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
-                self.tr = np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
-                self.bl = np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
-                self.br = np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
-                
-                samp_coord = []
-                for i in range(self.samps):
-                    samp_coord.append(list(map(float,(re.findall(r'\S+',f.readline().split('#', 1)[0])))))
-                self.samp_coord = samp_coord
-                
-                self.zstep = float((f.readline()).split('#', 1)[0])
-                self.nimages = int((f.readline()).split('#', 1)[0])
-                sID = (f.readline()).split('#', 1)[0]
-                sID = sID.replace("\n","")
-                self.sID = sID.replace(" ","")
-
-                nroot = (f.readline()).split('#', 1)[0]
-                nroot = nroot.replace("\n","")
-                self.nroot = nroot.replace(" ","")
-
+                self.nx, self.ny, self.samps = self._next_config(f, int)
+                self.tl = np.array(self._next_config(f, float))
+                self.tr = np.array(self._next_config(f, float))
+                self.bl = np.array(self._next_config(f, float))
+                self.br = np.array(self._next_config(f, float))
+                self.samp_coord = [self._next_config(f, float) for _ in range(self.samps)]
+                self.zstep = self._next_config(f, float)[0]
+                self.nimages = self._next_config(f, int)[0]
+                self.sID = self._next_config(f, str)[0].replace("\n", "").replace(" ", "")
+                self.nroot = self._next_config(f, str)[0].replace("\n", "").replace(" ", "")
                 self.alphabet=Ualphabet[0:self.ny]+Lalphabet[0:self.ny]
         except:
             raise Exception("invalid file format")
+    
+    """
+    Retrieves the next line from the given file stream.
+    Strips comments from the line and applied f to each item on the line
+    Returns a list containing the mapped items.
+
+    Parameters
+    ----------
+    file : an opened file stream
+    f    : function to apply to each item
+    """
+    def _next_config(self, file, f):
+        line = file.readline()
+        line_no_comments = line.split("#", 1)[0]
+        items = re.findall(r'\S+', line_no_comments)
+        return list(map(f, items))
     
     def print_help():
         print(' The format of the configuration file was not right. It should look something like this:')
