@@ -56,35 +56,34 @@ class Config():
         Lalphabet='abcdefghijklmnopqrstuvwxyz'
         
         try:
-            f = open(fname, 'r') # TODO: convert to with
-            jnk = list(map(int,(re.findall(r'\S+', (f.readline()).split('#', 1)[0]))))
-            self.nx = jnk[0]
-            self.ny = jnk[1]
-            self.samps = jnk[2]
+            with open(fname, 'r') as f:
+                jnk = list(map(int,(re.findall(r'\S+', (f.readline()).split('#', 1)[0]))))
+                self.nx = jnk[0]
+                self.ny = jnk[1]
+                self.samps = jnk[2]
 
-            self.tl = np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
-            self.tr = np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
-            self.bl = np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
-            self.br = np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
-            
-            samp_coord = []
-            for i in range(self.samps):
-                samp_coord.append(list(map(float,(re.findall(r'\S+',f.readline().split('#', 1)[0])))))
-            self.samp_coord = samp_coord
-            
-            self.zstep = float((f.readline()).split('#', 1)[0])
-            self.nimages = int((f.readline()).split('#', 1)[0])
-            sID = (f.readline()).split('#', 1)[0]
-            sID = sID.replace("\n","")
-            self.sID = sID.replace(" ","")
+                self.tl = np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
+                self.tr = np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
+                self.bl = np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
+                self.br = np.array(list(map(float,(re.findall(r'\S+', (f.readline()).split('#', 1)[0])))))
+                
+                samp_coord = []
+                for i in range(self.samps):
+                    samp_coord.append(list(map(float,(re.findall(r'\S+',f.readline().split('#', 1)[0])))))
+                self.samp_coord = samp_coord
+                
+                self.zstep = float((f.readline()).split('#', 1)[0])
+                self.nimages = int((f.readline()).split('#', 1)[0])
+                sID = (f.readline()).split('#', 1)[0]
+                sID = sID.replace("\n","")
+                self.sID = sID.replace(" ","")
 
-            nroot = (f.readline()).split('#', 1)[0]
-            nroot = nroot.replace("\n","")
-            self.nroot = nroot.replace(" ","")
+                nroot = (f.readline()).split('#', 1)[0]
+                nroot = nroot.replace("\n","")
+                self.nroot = nroot.replace(" ","")
 
-            self.alphabet=Ualphabet[0:self.ny]+Lalphabet[0:self.ny]
+                self.alphabet=Ualphabet[0:self.ny]+Lalphabet[0:self.ny]
         except:
-            f.close()
             raise Exception("invalid file format")
     
     def print_help():
