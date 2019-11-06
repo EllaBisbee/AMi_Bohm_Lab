@@ -150,8 +150,9 @@ def write_b():
         canvas.create_text(160,35,text=('parameters saved to '+fname))
 
 def read_b(event): #read parameters from specified configuration file 
-    global tl,tr,bl,br,nx,ny,zstep,nimages,nroot,filee,fname,alphabet 
-    fname=str(filee.get())
+    global tl,tr,bl,br,nx,ny,zstep,nimages,nroot,filee,fname,alphabet
+    config.set_fname(str(filee.get()))
+    pull_config_to_local()
     read_config()
     filee.delete(0,tk.END); filee.insert(0,fname)
     nxe.delete(0,tk.END); nxe.insert(0,nx)

@@ -52,24 +52,7 @@ class Config():
             raise ValueError("invalid configuration file path.")
 
         self.fname = fname
-        Ualphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        Lalphabet='abcdefghijklmnopqrstuvwxyz'
-        
-        try:
-            with open(fname, 'r') as f:
-                self.nx, self.ny, self.samps = self._next_config(f, int)
-                self.tl = np.array(self._next_config(f, float))
-                self.tr = np.array(self._next_config(f, float))
-                self.bl = np.array(self._next_config(f, float))
-                self.br = np.array(self._next_config(f, float))
-                self.samp_coord = [self._next_config(f, float) for _ in range(self.samps)]
-                self.zstep = self._next_config(f, float)[0]
-                self.nimages = self._next_config(f, int)[0]
-                self.sID = self._next_config(f, str)[0].replace("\n", "").replace(" ", "")
-                self.nroot = self._next_config(f, str)[0].replace("\n", "").replace(" ", "")
-                self.alphabet=Ualphabet[0:self.ny]+Lalphabet[0:self.ny]
-        except:
-            raise Exception("invalid file format")
+        self.read()
     
     """
     Retrieves the next line from the given file stream.
@@ -146,3 +129,23 @@ class Config():
             f.write(str('%6d     # nimages - the number of images of each sample\n'%(self.nimages)))
             f.write(self.sID+'     # sample name\n')
             f.write(self.nroot+'     # plate name\n')
+
+    def read(self):
+        Ualphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        Lalphabet='abcdefghijklmnopqrstuvwxyz'
+
+        try:
+            with open(self.fname, 'r') as f:
+                self.nx, self.ny, self.samps = self._next_config(f, int)
+                self.tl = np.array(self._next_config(f, float))
+                self.tr = np.array(self._next_config(f, float))
+                self.bl = np.array(self._next_config(f, float))
+                self.br = np.array(self._next_config(f, float))
+                self.samp_coord = [self._next_config(f, float) for _ in range(self.samps)]
+                self.zstep = self._next_config(f, float)[0]
+                self.nimages = self._next_config(f, int)[0]
+                self.sID = self._next_config(f, str)[0].replace("\n", "").replace(" ", "")
+                self.nroot = self._next_config(f, str)[0].replace("\n", "").replace(" ", "")
+                self.alphabet=Ualphabet[0:self.ny]+Lalphabet[0:self.ny]
+        except:
+            raise Exception("invalid file format")
