@@ -32,6 +32,7 @@ class Config():
 
     Attributes
     ----------
+    fname      : path to configuration file
     tl         : coords of the top left drop
     tr         : coords of the top right drop
     bl         : coords of the bottom left drop
@@ -70,6 +71,7 @@ class Config():
         items = re.findall(r'\S+', line_no_comments)
         return list(map(f, items))
     
+    @staticmethod
     def print_help():
         print(' The format of the configuration file was not right. It should look something like this:')
         print('  12   8    1        # number of positions along x and y and on the plate then number of samples at each position') 

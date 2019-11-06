@@ -12,18 +12,13 @@ fracbelow=0.5 # this is the fraction of zrange below the expected plane of focus
 xmax,ymax,zmax=160.,118.,29.3 #translation limits in mm  
 disable_hard_limits=True  #this disables hard limits during RUN only
 samp=0  #samp is the sub-sample index (used when there is more than one sample at each position)
-samp_coord=[] #fractional coordinates of the individual samples 
 gx,gy=0,0      #clicked coordinates on the canvas
 mx,my,mz=0,0,0 #machine position
 yrow,xcol=0,0  #sample position indices (starting at 0, not 1)
 pose_txt='A1'   
 corner='unset'
-alphabet=''; nroot=''; sID=''
-fname='AMi.config'
 viewing=False; running=False; stopit=False
 lighting1=False;lighting2=False
-Ualphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ'; Lalphabet='abcdefghijklmnopqrstuvwxyz'
-alphabet=[]
 config = None
 
 def main():
@@ -75,31 +70,16 @@ def main():
     s.write(('s1000 \n').encode('utf-8')) # set max spindle volocity
     grbl_out = s.readline() # Wait for grbl response with carriage return
 
-def read_config():  # read information from the configuration file
-    global config,fname
+    #TODO: remove
+    main_canvas()
+
+def read_config(fname='AMi.config'):  # read information from the configuration file
+    global config
     try:
         config = Config(fname)
-        pull_config_to_local()
     except:
-        config.print_help()
+        Config.print_help()
         if fname=='AMi.config': sys.exit()
-
-def pull_config_to_local():
-    global tl,tr,bl,br,nx,ny,samps,zstep,nimages,nroot,sID,filee,alphabet,samp_coord,config,fname
-    fname = config.fname
-    nx = config.nx
-    ny = config.ny
-    samps = config.samps
-    tl = config.tl
-    tr = config.tr
-    bl = config.bl
-    br = config.br
-    samp_coord = config.samp_coord
-    zstep = config.zstep
-    nimages = config.nimages
-    sID = config.sID
-    nroot = config.nroot
-    alphabet = config.alphabet
 
 def tdate(): # get the current date as a nice string
    dstr=(datetime.now().strftime('%h-%d-%Y_%I:%M%p')) 
@@ -117,7 +97,7 @@ def wait_for_Idle(): # wait for grbl to complete movement -new version wait for 
 #   print('our long wait has ended')
              
 def update_b(event): # write parameters to the configuration file
-    global tl,tr,bl,br,nx,ny,zstep,nimages,nroot,sID,filee,fname,alphabet,samps,config
+    global filee,config
     write_b()
 
 def write_b():
@@ -137,46 +117,45 @@ def write_b():
         config.set_zstep(float(zspe.get()))
         config.set_sID(str(sIDe.get()))
         config.set_nroot(str(IDe.get()))
-        pull_config_to_local()
 
         config.write()
         canvas.create_rectangle(2,2,318,60,fill='white')
-        canvas.create_text(160,35,text=('parameters saved to '+fname))
+        canvas.create_text(160,35,text=('parameters saved to '+config.fname))
 
 def read_b(event): #read parameters from specified configuration file 
-    global tl,tr,bl,br,nx,ny,zstep,nimages,nroot,filee,fname,alphabet 
-    fname=str(filee.get())
-    read_config()
-    filee.delete(0,tk.END); filee.insert(0,fname)
-    nxe.delete(0,tk.END); nxe.insert(0,nx)
-    nye.delete(0,tk.END); nye.insert(0,ny)
-    nimge.delete(0,tk.END); nimge.insert(0,nimages)
-    zspe.delete(0,tk.END); zspe.insert(0,zstep)
-    sIDe.delete(0,tk.END); sIDe.insert(0,sID)
-    IDe.delete(0,tk.END); IDe.insert(0,nroot)
-    sampse.delete(0,tk.END); sampse.insert(0,samps)
-    print('Parameters read from '+fname)
+    global filee
+    config.set_fname(str(filee.get()))
+    read_config(fname=config.fname)
+    filee.delete(0,tk.END); filee.insert(0,config.fname)
+    nxe.delete(0,tk.END); nxe.insert(0,config.nx)
+    nye.delete(0,tk.END); nye.insert(0,config.ny)
+    nimge.delete(0,tk.END); nimge.insert(0,config.nimages)
+    zspe.delete(0,tk.END); zspe.insert(0,config.zstep)
+    sIDe.delete(0,tk.END); sIDe.insert(0,config.sID)
+    IDe.delete(0,tk.END); IDe.insert(0,config.nroot)
+    sampse.delete(0,tk.END); sampse.insert(0,config.samps)
+    print('Parameters read from ' + config.fname)
     canvas.update()
 
 def mcoords(): # moves to the position specified by xcol, yrow
-    global mx,my,mz
+    global mx,my,mz,config
     print('called mcoords with yrow,xcol,samp:',yrow,xcol,samp)
     wait_for_Idle()
-    x=xcol/float(nx-1)+samp_coord[samp][0]
-    y=yrow/float(ny-1)+samp_coord[samp][1]
-    mx=br[0]*x*y+bl[0]*(1.-x)*y+tr[0]*x*(1.-y)+tl[0]*(1.-x)*(1.-y)
-    my=br[1]*x*y+bl[1]*(1.-x)*y+tr[1]*x*(1.-y)+tl[1]*(1.-x)*(1.-y)
-    mz=br[2]*x*y+bl[2]*(1.-x)*y+tr[2]*x*(1.-y)+tl[2]*(1.-x)*(1.-y)
+    x=xcol/float(config.nx-1)+config.samp_coord[samp][0]
+    y=yrow/float(config.ny-1)+config.samp_coord[samp][1]
+    mx=config.br[0]*x*y+config.bl[0]*(1.-x)*y+config.tr[0]*x*(1.-y)+config.tl[0]*(1.-x)*(1.-y)
+    my=config.br[1]*x*y+config.bl[1]*(1.-x)*y+config.tr[1]*x*(1.-y)+config.tl[1]*(1.-x)*(1.-y)
+    mz=config.br[2]*x*y+config.bl[2]*(1.-x)*y+config.tr[2]*x*(1.-y)+config.tl[2]*(1.-x)*(1.-y)
     print('mx,my,mz',mx,my,mz)
     s.write(('G0 x '+str(mx)+' y '+str(my)+' z '+ str(mz) + ' \n').encode('utf-8')) # g-code to grbl
     sleep(0.2)
     grbl_out = s.readline() # Wait for grbl response with carriage return
-    letnum=alphabet[yrow]+str(xcol+1)
-    if samps>1:letnum+=Lalphabet[samp]
+    letnum=config.alphabet[yrow]+str(xcol+1)
+    if config.samps>1:letnum+=Lalphabet[samp]
     pose.delete(0,tk.END); pose.insert(0,letnum)
     wait_for_Idle()
     canvas.create_rectangle(2,2,318,60,fill='white')
-    canvas.create_text(160,20,text=("showing "+letnum+'  position '+str(yrow*nx+xcol+1)),font="helvetica 11")
+    canvas.create_text(160,20,text=("showing "+letnum+'  position '+str(yrow*config.nx+xcol+1)),font="helvetica 11")
     canvas.create_text(160,39,text=('machine coordinates:  '+str(round(mx,3))+',  '+str(round(my,3))+',  '+str(round(mz,3))),font="helvetica 9",fill="grey")
     canvas.update()
 
@@ -185,7 +164,7 @@ def motion(event):
     gx, gy = event.x, event.y
 
 def left_click(event):
-    global gx,gy,corner,tl,tr,bl,br,pose,corner,alphabet,mx,my,mz,yrow,xcol,samps
+    global gx,gy,corner,pose,corner,mx,my,mz,yrow,xcol,config
     print('left_click gx,gy,xcol,yrow',gx,gy,xcol,yrow)
 
     #adjust z
@@ -233,19 +212,19 @@ def tl_left_b(event):
          mcoords() # move to TL
          canvas.create_rectangle(2,2,318,60,fill='white')
          canvas.create_text(160,20,text="SET now changes TL coordinates",font="Helvetia 9")
-         if samps>1:
+         if config.samps>1:
              canvas.create_text(160,40,text="After the corners Right Click TL for sub-samples",font="Helvetia 9")
 
 def tl_right_b(event):
-         global xcol,yrow,samp,mx,my,mz,corner,samps,samp_coord
-         samps=int(sampse.get())
-         for i in range(samps): 
-             try: test=samp_coord[i]
-             except: samp_coord.append([0., 0.])
-         print('samp_coord',samp_coord)
-         if samps>1:
+         global xcol,yrow,samp,mx,my,mz,corner
+         config.set_samps(int(sampse.get()))
+         for i in range(config.samps): 
+             try: test=config.samp_coord[i]
+             except: config.set_samp_coord(config.samp_coord.append([0., 0.]))
+         print('samp_coord',config.samp_coord)
+         if config.samps>1:
             samp+=1
-            if samp==samps:samp=1
+            if samp==config.samps:samp=1
             corner=str(samp)
             xcol=0; yrow=0
             mcoords() # move to TL and indicated sample
@@ -258,7 +237,7 @@ def tl_right_b(event):
 def tr_b(event):
          global xcol,yrow,samp,mx,my,mz,corner
          corner='TR'
-         xcol=nx-1; yrow=0; samp=0
+         xcol=config.nx-1; yrow=0; samp=0
          mcoords() # move to TR
          canvas.create_rectangle(2,2,318,60,fill='white')
          canvas.create_text(160,27,text="SET now changes TR coordinates",font="Helvetia 9")
@@ -266,7 +245,7 @@ def tr_b(event):
 def bl_b(event):
          global xcol,yrow,samp,mx,my,mz,corner
          corner='BL'
-         xcol=0; yrow=ny-1; samp=0
+         xcol=0; yrow=config.ny-1; samp=0
          mcoords() # move to BL
          canvas.create_rectangle(2,2,318,60,fill='white')
          canvas.create_text(160,27,text="SET now changes BL coordinates",font="Helvetia 9")
@@ -274,30 +253,32 @@ def bl_b(event):
 def br_b(event):
          global xcol,yrow,samp,mx,my,mz,corner
          corner='BR'
-         xcol=nx-1; yrow=ny-1; samp=0
+         xcol=config.nx-1; yrow=config.ny-1; samp=0
          mcoords() # move to BR 
          canvas.create_rectangle(2,2,318,60,fill='white')
          canvas.create_text(160,27,text="SET now changes BR coordinates",font="Helvetia 9")
 
 def set_b(event):
-          global tl,tr,bl,br,mx,my,mz,xcol,yrow,corner
+          global mx,my,mz,xcol,yrow,corner,config
           m=[mx,my,mz]
           if corner=="TL":
-             tl=m
-             print('new tl',tl)
+             config.set_tl(m)
+             print('new tl',config.tl)
           if corner=="TR":
-             tr=m
-             print('new tr',tr)
+             config.set_tr(m)
+             print('new tr',config.tr)
           if corner=="BL":
-             bl=m
-             print('new bl',bl)
+             config.set_bl(m)
+             print('new bl',config.bl)
           if corner=="BR":
-             br=m
-             print('new br',br)
+             config.set_br(m)
+             print('new br',config.br)
           if corner.isdigit():
-             samp_coord[(int(corner))][0]=(m[0]-tl[0])/(tr[0]-tl[0])
-             samp_coord[(int(corner))][1]=(m[1]-tl[1])/(bl[1]-tl[1])
-             print('new sample '+corner+' coordinates: '+str(samp_coord[(int(corner))]))
+            tmp_samp_coord = config.samp_coord
+            tmp_samp_coord[(int(corner))][0]=(m[0]-config.tl[0])/(config.tr[0]-config.tl[0])
+            tmp_samp_coord[(int(corner))][1]=(m[1]-config.tl[1])/(config.bl[1]-config.tl[1])
+            config.set_samp_coord(tmp_samp_coord)
+            print('new sample '+corner+' coordinates: '+str(config.samp_coord[(int(corner))]))
           canvas.create_rectangle(2,2,318,60,fill='white')
           if corner=='unset':canvas.create_text(160,27,text=("You must first select a corner"),font="Helvetia 10")
           else:
@@ -359,59 +340,58 @@ def close_b(event): # Closes the interface if not collecting images.  Stops the 
        root.quit()
 
 def snap_b(event): # takes a simple snapshot of the current view
-         global nroot
-         sID=str(sIDe.get())
-         nroot=str(IDe.get())
-         path1='images/'+sID
+         config.set_sID(str(sIDe.get()))
+         config.set_nroot(str(IDe.get()))
+         path1='images/'+config.sID
          if not os.path.isdir(path1):
            os.mkdir(path1)
-           print('created directory '+sID+' within the images directory')
-         path1='images/'+sID+'/'+nroot
+           print('created directory '+config.sID+' within the images directory')
+         path1='images/'+config.sID+'/'+config.nroot
          if not os.path.isdir(path1):
            os.mkdir(path1)
-           print('created directory '+nroot+' within the images/'+sID+' directory')
+           print('created directory '+config.nroot+' within the images/'+config.sID+' directory')
          path1=path1+'/snaps'
          if not os.path.isdir(path1):
            os.mkdir(path1)
-           print('created directory \'snaps\' within the images/'+sID+'/'+nroot+' directory')
-         if samps==1: 
-             sname='images/'+sID+'/'+nroot+'/snaps/'+alphabet[yrow]+str(xcol+1)+"_"+tdate()+'.jpg'
+           print('created directory \'snaps\' within the images/'+config.sID+'/'+config.nroot+' directory')
+         if config.samps==1: 
+             sname='images/'+config.sID+'/'+config.nroot+'/snaps/'+config.alphabet[yrow]+str(xcol+1)+"_"+tdate()+'.jpg'
          else: 
-             sname='images/'+sID+'/'+nroot+'/snaps/'+alphabet[yrow]+str(xcol+1)+Lalphabet[samp]+"_"+tdate()+'.jpg'
+             sname='images/'+config.sID+'/'+config.nroot+'/snaps/'+config.alphabet[yrow]+str(xcol+1)+Lalphabet[samp]+"_"+tdate()+'.jpg'
          camera.capture(sname)
          canvas.create_rectangle(2,2,318,60,fill='white')
          canvas.create_text(160,17,text=('image saved to '+sname),font="Helvetia 10")
          canvas.update()
 
 def snap_br(event): #right mouse snap - takes a series of z-stacked pictures using nimages and Z-spacing parameters
-         global nroot,mx,my,mz
-         sID=str(sIDe.get())
-         nroot=str(IDe.get())
-         nimages=int(nimge.get())
-         zstep=float(zspe.get())
-         samp_name=alphabet[yrow]+str(xcol+1)
-         if samps>1:samp_name+=Lalphabet[samp]
-         path1='images/'+sID
+         global mx,my,mz
+         config.set_sID(str(sIDe.get()))
+         config.set_nroot(str(IDe.get()))
+         config.set_nimages(int(nimge.get()))
+         config.set_zstep(float(zspe.get()))
+         samp_name=config.alphabet[yrow]+str(xcol+1)
+         if config.samps>1:samp_name+=Lalphabet[samp]
+         path1='images/'+config.sID
          if not os.path.isdir(path1):
            os.mkdir(path1)
-           print('created directory '+sID+' within the images directory')
-         path1='images/'+sID+'/'+nroot
+           print('created directory '+config.sID+' within the images directory')
+         path1='images/'+config.sID+'/'+config.nroot
          if not os.path.isdir(path1):
            os.mkdir(path1)
-           print('created directory '+nroot+' within the images/'+sID+' directory')
+           print('created directory '+config.nroot+' within the images/'+config.sID+' directory')
          path1=path1+'/snaps'
          if not os.path.isdir(path1):
            os.mkdir(path1)
-           print('created directory \'snaps\' within the images/'+sID+'/'+nroot+' directory')
+           print('created directory \'snaps\' within the images/'+config.sID+'/'+config.nroot+' directory')
          processf=open(path1+'/'+samp_name+'_process_snap.com','w')
          processf.write('rm OUT*.tif \n')
-         zrange=(nimages-1)*zstep
+         zrange=(config.nimages-1)*config.zstep
          z=mz-(1-fracbelow)*zrange # bottom of the zrange (this is the top of the sample!)
          z_sav=mz
          processf.write('echo \'processing: '+samp_name+'\' \n')
          samp_name+='_'+tdate()
          line='align_image_stack -m -a OUT '
-         for imgnum in range(nimages):
+         for imgnum in range(config.nimages):
              s.write(('G0 z '+ str(z) + '\n').encode('utf-8')) # move to z
              grbl_out=s.readline()
              wait_for_Idle()
@@ -419,7 +399,7 @@ def snap_br(event): #right mouse snap - takes a series of z-stacked pictures usi
              sleep(camera_delay)#slow things down to allow camera to settle down
              camera.capture(imgname)
              line+=samp_name+'_'+str(imgnum)+'.jpg '
-             z+=zstep
+             z+=config.zstep
          line+=(' \n') 
          processf.write(line)
          processf.write('enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 --hard-mask --output='+samp_name+'.tif OUT*.tif \n')
@@ -460,20 +440,20 @@ def light2_b(event): # this controls both the lower 120V AC output and the 24V D
              lighting2=True
 
 def run_b(event):
-         global yrow,xcol,samp,mx,my,mz,corner,running,viewing,lighting1,lighting2,nroot,sID,nimages,zstep,samps,stopit
+         global yrow,xcol,samp,mx,my,mz,corner,running,viewing,lighting1,lighting2,stopit
          write_b() # get data from the GUI window and save/update the configuration file... 
-         nimages=int(nimge.get())
-         samps=int(sampse.get()) 
-         zstep=float(zspe.get()) 
-         sID=str(sIDe.get())
-         nroot=str(IDe.get())
+         config.set_nimages(int(nimge.get()))
+         config.set_samps(int(sampse.get()))
+         config.set_zstep(float(zspe.get()))
+         config.set_sID(str(sIDe.get()))
+         config.set_nroot(str(IDe.get()))
          yrow=0; xcol=0; samp=0
          mcoords() #go to A1 
-         imgpath='images/'+sID
+         imgpath='images/'+config.sID
          if not os.path.isdir(imgpath):
            os.mkdir(imgpath)
            print('created directory: '+imgpath)
-         imgpath='images/'+sID+'/'+nroot
+         imgpath='images/'+config.sID+'/'+config.nroot
          if not os.path.isdir(imgpath):
            os.mkdir(imgpath)
            print('created directory: '+imgpath)
@@ -484,14 +464,14 @@ def run_b(event):
          if not os.path.isdir(imgpath+'/rawimages'):
            os.mkdir(imgpath+'/rawimages')
            print('created directory: '+imgpath+'/rawimages')
-           copyfile(fname,(imgpath+'/'+fname))
+           copyfile(config.fname,(imgpath+'/'+config.fname))
          if not viewing: 
              camera.start_preview(fullscreen=False,window=(0,-76,1597,1200))
              viewing=True
              sleep(2) # let camera adapt to the light before collecting images
-         processf=open(imgpath+'/process'+nroot+'.com','w')
+         processf=open(imgpath+'/process'+config.nroot+'.com','w')
          processf.write('rm OUT*.tif \n')
-         zrange=(nimages-1)*zstep
+         zrange=(config.nimages-1)*config.zstep
          running=True
          canvas.create_rectangle(2,2,318,60,fill='white')
          canvas.create_text(160,27,text=("imaging samples..."),font="Helvetia 10")
@@ -499,16 +479,16 @@ def run_b(event):
          if disable_hard_limits: 
            s.write(('$21=0 \n').encode('utf-8')) #turn off hard limits
            print('hard limits disabled')
-         for yrow in range(ny):
-            for xcol in range(nx):
-                for samp in range(samps):  
+         for yrow in range(config.ny):
+            for xcol in range(config.nx):
+                for samp in range(config.samps):  
                    mcoords() # go to the expected position of the focussed sample 
                    z=mz-(1-fracbelow)*zrange # bottom of the zrange (this is the top of the sample!)
-                   samp_name=alphabet[yrow]+str(xcol+1)
-                   if samps>1:samp_name+=Lalphabet[samp]
+                   samp_name=config.alphabet[yrow]+str(xcol+1)
+                   if config.samps>1:samp_name+=Lalphabet[samp]
                    processf.write('echo \'processing: '+samp_name+'\' \n')
                    line='align_image_stack -m -a OUT '
-                   for imgnum in range(nimages):
+                   for imgnum in range(config.nimages):
                       s.write(('G0 z '+ str(z) + '\n').encode('utf-8')) # move to z
                       grbl_out=s.readline()
                       wait_for_Idle()
@@ -518,7 +498,7 @@ def run_b(event):
                       sleep(camera_delay)#slow things down to allow camera to settle down
                       camera.capture(imgname)
                       line+='rawimages/'+samp_name+'_'+str(imgnum)+'.jpg '
-                      z+=zstep
+                      z+=config.zstep
                    line+=(' \n') 
                    processf.write(line)
                    processf.write('enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 --hard-mask --output='+samp_name+'.tif OUT*.tif \n')
@@ -541,8 +521,8 @@ def run_b(event):
          stopit=False
          
 def goto_b(event):
-         global xcol,yrow,mx,my,mz,corner,samp,pose_txt,samps
-         samps=int(sampse.get()) 
+         global xcol,yrow,mx,my,mz,corner,samp,pose_txt
+         config.set_samps(int(sampse.get()))
          corner='unset'
          canvas.update()
          pose_txt=str(pose.get())
@@ -552,15 +532,15 @@ def goto_b(event):
          pose_txtt=pose_txt
          #first deal with the sub-sample character if present
          if not pose_txt[-1].isdigit(): # sub-sample is specified
-             if pose_txt[-1] in Ualphabet[0:samps]:samp=Ualphabet.find(pose_txt[-1])
-             if pose_txt[-1] in Lalphabet[0:samps]:samp=Lalphabet.find(pose_txt[-1])
+             if pose_txt[-1] in Ualphabet[0:config.samps]:samp=Ualphabet.find(pose_txt[-1])
+             if pose_txt[-1] in Lalphabet[0:config.samps]:samp=Lalphabet.find(pose_txt[-1])
              pose_txtt=pose_txt[0:-1]
          if pose_txtt[0].isdigit(): # now see if it is in number format
              numb=int(pose_txtt) 
              numb-=1
-             if numb<nx*ny and numb>=0:
-                 yrow=int(numb/nx)
-                 xcol=numb-(yrow*nx)
+             if numb<config.nx*config.ny and numb>=0:
+                 yrow=int(numb/config.nx)
+                 xcol=numb-(yrow*config.nx)
                  print('yrow,xcol',yrow, xcol)
                  mcoords()
              else:
@@ -570,10 +550,10 @@ def goto_b(event):
          else: # assume it is letter then number format
            let0=pose_txtt[0]
            num0=int(pose_txtt[1:])
-           if ((let0 in alphabet) and (num0 <= nx)): 
-             yrow=alphabet.index(let0) 
-             if yrow>(ny-1): 
-               yrow=yrow-ny
+           if ((let0 in config.alphabet) and (num0 <= config.nx)): 
+             yrow=config.alphabet.index(let0) 
+             if yrow>(config.ny-1): 
+               yrow=yrow-config.ny
              xcol=num0-1
              mcoords()
            else:
@@ -582,8 +562,8 @@ def goto_b(event):
              canvas.update()
 
 def prev_bl(event):
-         global xcol,yrow,samp,mx,my,mz,corner,samps
-         samps=int(sampse.get()) 
+         global xcol,yrow,samp,mx,my,mz,corner
+         config.set_samps(int(sampse.get()))
          corner='unset'
          canvas.create_rectangle(2,2,318,60,fill='white')
          if samp>0:
@@ -591,38 +571,38 @@ def prev_bl(event):
              mcoords()
          elif xcol>0:
              xcol-=1
-             samp=samps-1
+             samp=config.samps-1
              mcoords()
          elif yrow>0:
              yrow-=1
-             xcol=nx-1
-             samp=samps-1
+             xcol=config.nx-1
+             samp=config.samps-1
              mcoords()
          else:
              canvas.create_text(160,27,text=("cannot reverse beyond the first sample"),font="Helvetia 10")
              canvas.update()
 
 def prev_br(event):
-        global xcol,yrow,mx,my,mz,corner,samps
-        samps=int(sampse.get()) 
+        global xcol,yrow,mx,my,mz,corner
+        config.set_samps(int(sampse.get()))
         canvas.create_rectangle(2,2,318,60,fill='white')
         yrow-=1
-        if yrow == -1: yrow=ny-1
+        if yrow == -1: yrow=config.ny-1
         mcoords()
 
 def next_bl(event):
-         global xcol,yrow,samp,mx,my,mz,corner,samps
-         samps=int(sampse.get()) 
+         global xcol,yrow,samp,mx,my,mz,corner
+         config.set_samps(int(sampse.get()))
          corner='unset'
          canvas.create_rectangle(2,2,318,60,fill='white')
-         if samp<(samps-1):
+         if samp<(config.samps-1):
              samp+=1
              mcoords()
-         elif xcol<(nx-1):
+         elif xcol<(config.nx-1):
              xcol+=1
              samp=0
              mcoords()
-         elif yrow<(ny-1):
+         elif yrow<(config.ny-1):
              yrow+=1
              xcol=0
              samp=0
@@ -632,197 +612,199 @@ def next_bl(event):
              canvas.update()
 
 def next_br(event):
-         global xcol,yrow,mx,my,mz,corner,samps
-         samps=int(sampse.get()) 
+         global xcol,yrow,mx,my,mz,corner
+         config.set_samps(int(sampse.get()))
          corner='unset'
          canvas.create_rectangle(2,2,318,60,fill='white')
          yrow+=1
          if yrow == 8: yrow=0
          mcoords()
 
-root = tk.Tk()
-root.title('AMiGUI v1.0')
-root.geometry('320x637+1597+30')
+def main_canvas():
+    global root,canvas,tlButton,trButton,blButton,brButton,setButton,viewButton,resetButton,closeButton,light1Button,light2Button,snapButton,runButton,gotoButton,pose,prevButton,nextButton,updateButton,readButton,filee,nxe,nye,nimge,zspe,sIDe,IDe,sampse
+    root = tk.Tk()
+    root.title('AMiGUI v1.0')
+    root.geometry('320x637+1597+30')
 
-root.bind('<Button-1>', left_click) #left click
-#root.bind('<Button-3>', right_click) #right click
-root.bind('<Motion>', motion)
+    root.bind('<Button-1>', left_click) #left click
+    #root.bind('<Button-3>', right_click) #right click
+    root.bind('<Motion>', motion)
 
-canvas = tk.Canvas(root, width=320, height=637)
-canvas.pack()
-canvas.create_rectangle(0,0,320,637, width=0, fill="white") #entire window
-#bounding boxes
-canvas.create_rectangle(5,65,40,335, width=2, outline="darkblue",fill="lightgrey") #z setting
-canvas.create_rectangle(45,65,315,335, width=2, outline="darkblue",fill="lightgrey") #xy setting
-canvas.create_line(45, 200, 315, 200, width=2) #horizontal for xy
-canvas.create_line(180, 65, 180, 335, width=2)  #vertical for xy
-canvas.create_line(5, 200, 40, 200, width=2)   #horizontal for z
-canvas.create_line(15, 120, 30, 120,fill="red")   #z lines
-canvas.create_line(15, 160, 30, 160,fill="red")   #z lines
-canvas.create_line(15, 240, 30, 240,fill="red")   #z lines
-canvas.create_line(15, 280, 30, 280,fill="red")   #z lines
-canvas.create_oval(60, 80, 300, 320, outline="red") #outer circle
-canvas.create_oval(100, 120, 260, 280, outline = "red") #middle circle
-canvas.create_oval(140, 160, 220, 240, outline="red") #inner circle
-#labels for the xy and z areas
-canvas.create_text(295,190,fill="darkblue",font="Helvetia 12 bold",text="+X")
-canvas.create_text(60,190,fill="darkblue",font="Helvetia 12 bold",text="-X")
-canvas.create_text(197,75,fill="darkblue",font="Helvetia 12 bold",text="+Y")
-canvas.create_text(197,325,fill="darkblue",font="Helvetia 12 bold",text="-Y")
-canvas.create_text(20,80,fill="darkblue",font="Helvetia 12 bold",text="+Z")
-canvas.create_text(20,320,fill="darkblue",font="Helvetia 12 bold",text="-Z")
+    canvas = tk.Canvas(root, width=320, height=637)
+    canvas.pack()
+    canvas.create_rectangle(0,0,320,637, width=0, fill="white") #entire window
+    #bounding boxes
+    canvas.create_rectangle(5,65,40,335, width=2, outline="darkblue",fill="lightgrey") #z setting
+    canvas.create_rectangle(45,65,315,335, width=2, outline="darkblue",fill="lightgrey") #xy setting
+    canvas.create_line(45, 200, 315, 200, width=2) #horizontal for xy
+    canvas.create_line(180, 65, 180, 335, width=2)  #vertical for xy
+    canvas.create_line(5, 200, 40, 200, width=2)   #horizontal for z
+    canvas.create_line(15, 120, 30, 120,fill="red")   #z lines
+    canvas.create_line(15, 160, 30, 160,fill="red")   #z lines
+    canvas.create_line(15, 240, 30, 240,fill="red")   #z lines
+    canvas.create_line(15, 280, 30, 280,fill="red")   #z lines
+    canvas.create_oval(60, 80, 300, 320, outline="red") #outer circle
+    canvas.create_oval(100, 120, 260, 280, outline = "red") #middle circle
+    canvas.create_oval(140, 160, 220, 240, outline="red") #inner circle
+    #labels for the xy and z areas
+    canvas.create_text(295,190,fill="darkblue",font="Helvetia 12 bold",text="+X")
+    canvas.create_text(60,190,fill="darkblue",font="Helvetia 12 bold",text="-X")
+    canvas.create_text(197,75,fill="darkblue",font="Helvetia 12 bold",text="+Y")
+    canvas.create_text(197,325,fill="darkblue",font="Helvetia 12 bold",text="-Y")
+    canvas.create_text(20,80,fill="darkblue",font="Helvetia 12 bold",text="+Z")
+    canvas.create_text(20,320,fill="darkblue",font="Helvetia 12 bold",text="-Z")
 
-# corner alignment tool
-canvas.create_rectangle(5,340,138,443,width=3,fill="lightgrey")
+    # corner alignment tool
+    canvas.create_rectangle(5,340,138,443,width=3,fill="lightgrey")
 
-tlButton = tk.Button(root, text = "TL",font="Helvetia 12")
-tlButton.configure(width = 3, background = "skyblue1",  activebackground = "green", relief = tk.RAISED)
-tlButton_window = canvas.create_window(10,345, anchor = tk.NW, window=tlButton)
-tlButton.bind('<Button-1>',tl_left_b)
-tlButton.bind('<Button-3>',tl_right_b)
+    tlButton = tk.Button(root, text = "TL",font="Helvetia 12")
+    tlButton.configure(width = 3, background = "skyblue1",  activebackground = "green", relief = tk.RAISED)
+    tlButton_window = canvas.create_window(10,345, anchor = tk.NW, window=tlButton)
+    tlButton.bind('<Button-1>',tl_left_b)
+    tlButton.bind('<Button-3>',tl_right_b)
 
-trButton = tk.Button(root, text = "TR",font="Helvetia 12")
-trButton.configure(width = 3, background = "skyblue1",  activebackground = "green", relief = tk.RAISED)
-trButton_window = canvas.create_window(75,345, anchor = tk.NW, window=trButton)
-trButton.bind('<Button-1>',tr_b)
+    trButton = tk.Button(root, text = "TR",font="Helvetia 12")
+    trButton.configure(width = 3, background = "skyblue1",  activebackground = "green", relief = tk.RAISED)
+    trButton_window = canvas.create_window(75,345, anchor = tk.NW, window=trButton)
+    trButton.bind('<Button-1>',tr_b)
 
-blButton = tk.Button(root, text = "BL",font="Helvetia 12")
-blButton.configure(width = 3, background = "skyblue1",  activebackground = "green", relief = tk.RAISED)
-blButton_window = canvas.create_window(10,405, anchor = tk.NW, window=blButton)
-blButton.bind('<Button-1>',bl_b)
+    blButton = tk.Button(root, text = "BL",font="Helvetia 12")
+    blButton.configure(width = 3, background = "skyblue1",  activebackground = "green", relief = tk.RAISED)
+    blButton_window = canvas.create_window(10,405, anchor = tk.NW, window=blButton)
+    blButton.bind('<Button-1>',bl_b)
 
-brButton = tk.Button(root, text = "BR",font="Helvetia 12")
-brButton.configure(width = 3, background = "skyblue1",  activebackground = "green", relief = tk.RAISED)
-brButton_window = canvas.create_window(75,405, anchor = tk.NW, window=brButton)
-brButton.bind('<Button-1>',br_b)
+    brButton = tk.Button(root, text = "BR",font="Helvetia 12")
+    brButton.configure(width = 3, background = "skyblue1",  activebackground = "green", relief = tk.RAISED)
+    brButton_window = canvas.create_window(75,405, anchor = tk.NW, window=brButton)
+    brButton.bind('<Button-1>',br_b)
 
-setButton = tk.Button(root, text = "SET",font="Helvetia 12 bold")
-setButton.configure(width = 3, background = "yellow",  activebackground = "green", relief = tk.RAISED)
-setButton_window = canvas.create_window(40,376, anchor = tk.NW, window=setButton)
-setButton.bind('<Button-1>',set_b)
+    setButton = tk.Button(root, text = "SET",font="Helvetia 12 bold")
+    setButton.configure(width = 3, background = "yellow",  activebackground = "green", relief = tk.RAISED)
+    setButton_window = canvas.create_window(40,376, anchor = tk.NW, window=setButton)
+    setButton.bind('<Button-1>',set_b)
 
-# view, reset, quit, snap, run
-viewButton = tk.Button(root, text = "VIEW",font="Helvetia 12 bold",fg="black")
-viewButton.configure(width = 10, background="orange", activebackground = "green", relief = tk.RAISED)
-viewButton_window = canvas.create_window(160,342, anchor = tk.NW, window=viewButton)
-viewButton.bind('<Button-1>',view_b)
+    # view, reset, quit, snap, run
+    viewButton = tk.Button(root, text = "VIEW",font="Helvetia 12 bold",fg="black")
+    viewButton.configure(width = 10, background="orange", activebackground = "green", relief = tk.RAISED)
+    viewButton_window = canvas.create_window(160,342, anchor = tk.NW, window=viewButton)
+    viewButton.bind('<Button-1>',view_b)
 
-resetButton = tk.Button(root, text = "reset origin",font="Helvetia 10")
-resetButton.configure(width = 7, background = "lightgrey",  activebackground = "green", relief = tk.RAISED)
-resetButton_window = canvas.create_window(145,380, anchor = tk.NW, window=resetButton)
-resetButton.bind('<Button-1>',reset_b)
-resetButton.bind('<Button-3>',reset_br)
+    resetButton = tk.Button(root, text = "reset origin",font="Helvetia 10")
+    resetButton.configure(width = 7, background = "lightgrey",  activebackground = "green", relief = tk.RAISED)
+    resetButton_window = canvas.create_window(145,380, anchor = tk.NW, window=resetButton)
+    resetButton.bind('<Button-1>',reset_b)
+    resetButton.bind('<Button-3>',reset_br)
 
-closeButton = tk.Button(root, text = "stop/close",font="Helvetia 10")
-closeButton.configure(width = 7, background = "lightgrey",  activebackground = "green", relief = tk.RAISED)
-closeButton_window = canvas.create_window(233,380, anchor = tk.NW, window=closeButton)
-closeButton.bind('<Button-1>',close_b)
+    closeButton = tk.Button(root, text = "stop/close",font="Helvetia 10")
+    closeButton.configure(width = 7, background = "lightgrey",  activebackground = "green", relief = tk.RAISED)
+    closeButton_window = canvas.create_window(233,380, anchor = tk.NW, window=closeButton)
+    closeButton.bind('<Button-1>',close_b)
 
-light1Button = tk.Button(root, text = "light1",font="Helvetia 10")
-light1Button.configure(width = 7, background = "lightgrey",  activebackground = "green", relief = tk.RAISED)
-light1Button_window = canvas.create_window(145,415, anchor = tk.NW, window=light1Button)
-light1Button.bind('<Button-1>',light1_b)
+    light1Button = tk.Button(root, text = "light1",font="Helvetia 10")
+    light1Button.configure(width = 7, background = "lightgrey",  activebackground = "green", relief = tk.RAISED)
+    light1Button_window = canvas.create_window(145,415, anchor = tk.NW, window=light1Button)
+    light1Button.bind('<Button-1>',light1_b)
 
-light2Button = tk.Button(root, text = "light2",font="Helvetia 10")
-light2Button.configure(width = 7, background = "lightgrey",  activebackground = "green", relief = tk.RAISED)
-light2Button_window = canvas.create_window(233,415, anchor = tk.NW, window=light2Button)
-light2Button.bind('<Button-1>',light2_b)
+    light2Button = tk.Button(root, text = "light2",font="Helvetia 10")
+    light2Button.configure(width = 7, background = "lightgrey",  activebackground = "green", relief = tk.RAISED)
+    light2Button_window = canvas.create_window(233,415, anchor = tk.NW, window=light2Button)
+    light2Button.bind('<Button-1>',light2_b)
 
-snapButton = tk.Button(root, text = "SNAP IMAGE",font="Helvetia 12 bold",fg="white")
-snapButton.configure(width = 10, background = "medium blue",  activebackground = "green", relief = tk.RAISED)
-snapButton_window = canvas.create_window(175,452, anchor = tk.NW, window=snapButton)
-snapButton.bind('<Button-1>',snap_b)
-snapButton.bind('<Button-3>',snap_br)
+    snapButton = tk.Button(root, text = "SNAP IMAGE",font="Helvetia 12 bold",fg="white")
+    snapButton.configure(width = 10, background = "medium blue",  activebackground = "green", relief = tk.RAISED)
+    snapButton_window = canvas.create_window(175,452, anchor = tk.NW, window=snapButton)
+    snapButton.bind('<Button-1>',snap_b)
+    snapButton.bind('<Button-3>',snap_br)
 
-runButton = tk.Button(root, text = "RUN",font="Helvetia 12 bold",fg="yellow")
-runButton.configure(width = 10, background = "black",  activebackground = "green", relief = tk.RAISED)
-runButton_window = canvas.create_window(175,491, anchor = tk.NW, window=runButton)
-runButton.bind('<Button-1>',run_b)
+    runButton = tk.Button(root, text = "RUN",font="Helvetia 12 bold",fg="yellow")
+    runButton.configure(width = 10, background = "black",  activebackground = "green", relief = tk.RAISED)
+    runButton_window = canvas.create_window(175,491, anchor = tk.NW, window=runButton)
+    runButton.bind('<Button-1>',run_b)
 
-# manual movement
-canvas.create_rectangle(5,450,168,525,width=3,fill="lightgrey")  
+    # manual movement
+    canvas.create_rectangle(5,450,168,525,width=3,fill="lightgrey")  
 
-gotoButton = tk.Button(root, text = "go to")
-gotoButton.configure(width = 5, background = "cyan2",  activebackground = "green", relief = tk.RAISED)
-gotoButton_window = canvas.create_window(30,458, anchor = tk.NW, window=gotoButton)
-gotoButton.bind('<Button-1>',goto_b)
+    gotoButton = tk.Button(root, text = "go to")
+    gotoButton.configure(width = 5, background = "cyan2",  activebackground = "green", relief = tk.RAISED)
+    gotoButton_window = canvas.create_window(30,458, anchor = tk.NW, window=gotoButton)
+    gotoButton.bind('<Button-1>',goto_b)
 
-pose = tk.Entry(canvas)
-pose.insert(10,'A1')
-canvas.create_window(127,472, width=50, window = pose) # manual position entry box
+    pose = tk.Entry(canvas)
+    pose.insert(10,'A1')
+    canvas.create_window(127,472, width=50, window = pose) # manual position entry box
 
-prevButton = tk.Button(root, text = "prev")
-prevButton.configure(width = 5, background = "cyan2",  activebackground = "green", relief = tk.RAISED)
-prevButton_window = canvas.create_window(15,490, anchor = tk.NW, window=prevButton)
-prevButton.bind('<Button-1>',prev_bl)
-prevButton.bind('<Button-3>',prev_br)
+    prevButton = tk.Button(root, text = "prev")
+    prevButton.configure(width = 5, background = "cyan2",  activebackground = "green", relief = tk.RAISED)
+    prevButton_window = canvas.create_window(15,490, anchor = tk.NW, window=prevButton)
+    prevButton.bind('<Button-1>',prev_bl)
+    prevButton.bind('<Button-3>',prev_br)
 
-nextButton = tk.Button(root, text = "next")
-nextButton.configure(width = 5, background = "cyan2",  activebackground = "green", relief = tk.RAISED)
-nextButton_window = canvas.create_window(86,490, anchor = tk.NW, window=nextButton)
-nextButton.bind('<Button-1>',next_bl)
-nextButton.bind('<Button-3>',next_br)
+    nextButton = tk.Button(root, text = "next")
+    nextButton.configure(width = 5, background = "cyan2",  activebackground = "green", relief = tk.RAISED)
+    nextButton_window = canvas.create_window(86,490, anchor = tk.NW, window=nextButton)
+    nextButton.bind('<Button-1>',next_bl)
+    nextButton.bind('<Button-3>',next_br)
 
-# automated imaging parameters
-canvas.create_rectangle(5,532,315,634,width=3,fill="lightgrey")  
+    # automated imaging parameters
+    canvas.create_rectangle(5,532,315,634,width=3,fill="lightgrey")  
 
-updateButton = tk.Button(root, text = "write/update",font="helvetica 10") # update file
-updateButton.configure(width = 8, background = "yellow",  activebackground = "green", relief = tk.RAISED)
-updateButton_window = canvas.create_window(10,541, anchor = tk.NW, window=updateButton)
-updateButton.bind('<Button-1>',update_b)
+    updateButton = tk.Button(root, text = "write/update",font="helvetica 10") # update file
+    updateButton.configure(width = 8, background = "yellow",  activebackground = "green", relief = tk.RAISED)
+    updateButton_window = canvas.create_window(10,541, anchor = tk.NW, window=updateButton)
+    updateButton.bind('<Button-1>',update_b)
 
-readButton = tk.Button(root, text = "read file",font="helvetica 10") # read file
-readButton.configure(width = 8, background = "yellow",  activebackground = "green", relief = tk.RAISED)
-readButton_window = canvas.create_window(10,573, anchor = tk.NW, window=readButton)
-readButton.bind('<Button-1>',read_b)
+    readButton = tk.Button(root, text = "read file",font="helvetica 10") # read file
+    readButton.configure(width = 8, background = "yellow",  activebackground = "green", relief = tk.RAISED)
+    readButton_window = canvas.create_window(10,573, anchor = tk.NW, window=readButton)
+    readButton.bind('<Button-1>',read_b)
 
-filee = tk.Entry(canvas)
-filee.insert(0,fname)
-canvas.create_window(154,549, width=110, window = filee) # manual position entry box
+    filee = tk.Entry(canvas)
+    filee.insert(0,config.fname)
+    canvas.create_window(154,549, width=110, window = filee) # manual position entry box
 
-canvas.create_text(227,548,text="nx:",font="Helvetia 10",fill="black") #nx
-nxe = tk.Entry(canvas)
-nxe.insert(0,nx)
-canvas.create_window(253,549, width=26, window = nxe) 
+    canvas.create_text(227,548,text="nx:",font="Helvetia 10",fill="black") #nx
+    nxe = tk.Entry(canvas)
+    nxe.insert(0,config.nx)
+    canvas.create_window(253,549, width=26, window = nxe) 
 
-canvas.create_text(280,548,text="ny:",font="Helvetia 10",fill="black") #ny
-nye = tk.Entry(canvas)
-nye.insert(0,ny)
-canvas.create_window(298,549, width=14, window = nye) 
+    canvas.create_text(280,548,text="ny:",font="Helvetia 10",fill="black") #ny
+    nye = tk.Entry(canvas)
+    nye.insert(0,config.ny)
+    canvas.create_window(298,549, width=14, window = nye) 
 
-canvas.create_text(133,572,text="n_images:",font="Helvetia 10",fill="black") #n_images
-nimge = tk.Entry(canvas)
-nimge.insert(0,nimages)
-canvas.create_window(179,574, width=21, window = nimge) 
+    canvas.create_text(133,572,text="n_images:",font="Helvetia 10",fill="black") #n_images
+    nimge = tk.Entry(canvas)
+    nimge.insert(0,config.nimages)
+    canvas.create_window(179,574, width=21, window = nimge) 
 
-canvas.create_text(231,572,text="Z-spacing:",font="Helvetia 10",fill="black") # z spacing
-zspe = tk.Entry(canvas)
-zspe.insert(0,zstep)
-canvas.create_window(288,574, width=40, window = zspe) 
+    canvas.create_text(231,572,text="Z-spacing:",font="Helvetia 10",fill="black") # z spacing
+    zspe = tk.Entry(canvas)
+    zspe.insert(0,config.zstep)
+    canvas.create_window(288,574, width=40, window = zspe) 
 
-canvas.create_text(133,596,text="sample ID:",font="Helvetia 10",fill="black") # sample ID: 
-sIDe = tk.Entry(canvas)
-sIDe.insert(0,sID)
-canvas.create_window(235,596, width=132, window = sIDe)
+    canvas.create_text(133,596,text="sample ID:",font="Helvetia 10",fill="black") # sample ID: 
+    sIDe = tk.Entry(canvas)
+    sIDe.insert(0,config.sID)
+    canvas.create_window(235,596, width=132, window = sIDe)
 
-canvas.create_text(38,618,text="plate ID:",font="Helvetia 10",fill="black") # plate ID: 
-IDe = tk.Entry(canvas)
-IDe.insert(0,nroot)
-canvas.create_window(138,618, width=132, window = IDe)
+    canvas.create_text(38,618,text="plate ID:",font="Helvetia 10",fill="black") # plate ID: 
+    IDe = tk.Entry(canvas)
+    IDe.insert(0,config.nroot)
+    canvas.create_window(138,618, width=132, window = IDe)
 
-canvas.create_text(250,618,text="samples/pos:",font="Helvetia 10",fill="black") # sub-samples
-sampse = tk.Entry(canvas)
-sampse.insert(0,samps)
-canvas.create_window(302,618, width=14, window = sampse) 
+    canvas.create_text(250,618,text="samples/pos:",font="Helvetia 10",fill="black") # sub-samples
+    sampse = tk.Entry(canvas)
+    sampse.insert(0,config.samps)
+    canvas.create_window(302,618, width=14, window = sampse) 
 
-#start message
-canvas.create_text(160,32,text=(" The corner samples must be centered and \n in focus before imaging. Use blue buttons \n to check alignment, and XYZ windows to \n make corrections.  Good luck!!"),font="Helvetia 10",fill="darkblue")
+    #start message
+    canvas.create_text(160,32,text=(" The corner samples must be centered and \n in focus before imaging. Use blue buttons \n to check alignment, and XYZ windows to \n make corrections.  Good luck!!"),font="Helvetia 10",fill="darkblue")
 
-canvas.update()
-fname=str(filee.get())
-root.update()
+    canvas.update()
+    config.set_fname(str(filee.get()))
+    root.update()
 
-root.mainloop()
+    root.mainloop()
 
 print('\n Hope you find what you\'re looking for!  \n')
 GPIO.output(17, GPIO.LOW) #turn off light1
