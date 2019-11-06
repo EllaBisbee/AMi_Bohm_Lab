@@ -44,7 +44,6 @@ class Config():
     nimages    : number of images per drop
     nroot      : plate name (no spaces)
     sID        : sample name (no spaces)
-    filee      : TODO ?????
     alphabet   : TODO ?????
     samp_coord : fractional coordinates of the individual samples
     """
