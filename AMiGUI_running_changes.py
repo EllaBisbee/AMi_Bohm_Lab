@@ -82,25 +82,30 @@ def main():
     """
 
 def read_config():  # read information from the configuration file
-    global tl,tr,bl,br,nx,ny,samps,zstep,nimages,nroot,sID,filee,alphabet,samp_coord,config
+    global config,fname
     try:
         config = Config(fname)
-        nx = config.nx
-        ny = config.ny
-        samps = config.samps
-        tl = config.tl
-        tr = config.tr
-        bl = config.bl
-        br = config.br
-        samp_coord = config.samp_coord
-        zstep = config.zstep
-        nimages = config.nimages
-        sID = config.sID
-        nroot = config.nroot
-        alphabet = config.alphabet
+        pull_config_to_local()
     except:
         config.print_help()
         if fname=='AMi.config': sys.exit()
+
+def pull_config_to_local():
+    global tl,tr,bl,br,nx,ny,samps,zstep,nimages,nroot,sID,filee,alphabet,samp_coord,config,fname
+    fname = config.fname
+    nx = config.nx
+    ny = config.ny
+    samps = config.samps
+    tl = config.tl
+    tr = config.tr
+    bl = config.bl
+    br = config.br
+    samp_coord = config.samp_coord
+    zstep = config.zstep
+    nimages = config.nimages
+    sID = config.sID
+    nroot = config.nroot
+    alphabet = config.alphabet
 
 def tdate(): # get the current date as a nice string
    dstr=(datetime.now().strftime('%h-%d-%Y_%I:%M%p')) 
@@ -118,42 +123,31 @@ def wait_for_Idle(): # wait for grbl to complete movement -new version wait for 
 #   print('our long wait has ended')
              
 def update_b(event): # write parameters to the configuration file
-    global tl,tr,bl,br,nx,ny,zstep,nimages,nroot,sID,filee,fname,alphabet,samps
+    global tl,tr,bl,br,nx,ny,zstep,nimages,nroot,sID,filee,fname,alphabet,samps,config
     write_b()
 
 def write_b():
-    fname=str(filee.get())
-    if " " in fname: 
+    tmp_fname = str(filee.get())
+    if " " in tmp_fname:
         canvas.create_rectangle(2,2,318,60,fill='white')
         canvas.create_text(160,35,text=('file name cannot contain spaces. Nothing written.'))
-        filee.delete(0,tk.END); filee.insert(0,""); canas.update()
+        filee.delete(0,tk.END); 
+        filee.insert(0,""); 
+        canvas.update()
     else:
-         f=open(fname,'w')
-         nx=int(nxe.get())
-         ny=int(nye.get())
-         samps=int(sampse.get())
-         nimages=int(nimge.get())
-         zstep=float(zspe.get())
-         sID=str(sIDe.get())
-         nroot=str(IDe.get())
-         f.write(str('%6d%6d%6d     # number of positons on x and y, then the number of samples at each position\n'%(nx,ny,samps)))
-         f.write(str('%9.3f%9.3f%9.3f  # coordinates of the top left sample\n'%(tl[0],tl[1],tl[2])))
-         f.write(str('%9.3f%9.3f%9.3f  # coordinates of the top right sample\n'%(tr[0],tr[1],tr[2])))
-         f.write(str('%9.3f%9.3f%9.3f  # coordinates of the bottom left sample\n'%(bl[0],bl[1],bl[2])))
-         f.write(str('%9.3f%9.3f%9.3f  # coordinates of the bottom right sample\n'%(br[0],br[1],br[2])))
-         for i in range(samps):
-             try: test=samp_coord[i]
-             except: samp_coord.append([0., 0.])
-             ta=float(samp_coord[i][0])
-             tb=float(samp_coord[i][1])
-             f.write(str('%9.4f%9.4f  # fractional offsets of sub-sample \n'%(ta,tb)))
-         f.write(str('%9.3f # zstep - the spacing in z between images\n'%(zstep)))
-         f.write(str('%6d     # nimages - the number of images of each sample\n'%(nimages)))
-         f.write(sID+'     # sample name\n')
-         f.write(nroot+'     # plate name\n')
-         f.close()
-         canvas.create_rectangle(2,2,318,60,fill='white')
-         canvas.create_text(160,35,text=('parameters saved to '+fname))
+        config.set_fname(tmp_fname)
+        config.set_nx(int(nxe.get()))
+        config.set_ny(int(nye.get()))
+        config.set_samps(int(sampse.get()))
+        config.set_nimages(int(nimge.get()))
+        config.set_zstep(float(zspe.get()))
+        config.set_sID(str(sIDe.get()))
+        config.set_nroot(str(IDe.get()))
+        pull_config_to_local()
+
+        config.write()
+        canvas.create_rectangle(2,2,318,60,fill='white')
+        canvas.create_text(160,35,text=('parameters saved to '+fname))
 
 def read_b(event): #read parameters from specified configuration file 
     global tl,tr,bl,br,nx,ny,zstep,nimages,nroot,filee,fname,alphabet 

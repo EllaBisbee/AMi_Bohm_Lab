@@ -99,3 +99,50 @@ class Config():
         print('   4                 # number of images per drop')
         print('   AMi_sample        # sample name (no spaces)')
         print('   AB_xs2            # plate name (no spaces)')
+    
+    def set_fname(self, fname):
+        self.fname = fname
+    def set_nx(self, nx):
+        self.nx = nx
+    def set_ny(self, ny):
+        self.ny = ny
+    def set_samps(self, samps):
+        self.samps = samps
+    def set_tl(self, tl):
+        self.tl = tl
+    def set_tr(self, tr):
+        self.tr = tr
+    def set_bl(self, bl):
+        self.bl = bl
+    def set_br(self, br):
+        self.br = br
+    def set_samp_coord(self, samp_coord):
+        self.samp_coord = samp_coord
+    def set_zstep(self, zstep):
+        self.zstep = zstep
+    def set_nimages(self, nimages):
+        self.nimages = nimages
+    def set_sID(self, sID):
+        self.sID = sID
+    def set_nroot(self, nroot):
+        self.nroot = nroot
+    def set_alphabet(self, alphabet):
+        self.alphabet = alphabet
+
+    def write(self):
+        with open(self.fname, "w") as f:
+            f.write(str('%6d%6d%6d     # number of positons on x and y, then the number of samples at each position\n'%(self.nx,self.ny,self.samps)))
+            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the top left sample\n'%(self.tl[0],self.tl[1],self.tl[2])))
+            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the top right sample\n'%(self.tr[0],self.tr[1],self.tr[2])))
+            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the bottom left sample\n'%(self.bl[0],self.bl[1],self.bl[2])))
+            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the bottom right sample\n'%(self.br[0],self.br[1],self.br[2])))
+            for i in range(self.samps):
+                try: test=self.samp_coord[i]
+                except: self.samp_coord.append([0., 0.])
+                ta=float(self.samp_coord[i][0])
+                tb=float(self.samp_coord[i][1])
+                f.write(str('%9.4f%9.4f  # fractional offsets of sub-sample \n'%(ta,tb)))
+            f.write(str('%9.3f # zstep - the spacing in z between images\n'%(self.zstep)))
+            f.write(str('%6d     # nimages - the number of images of each sample\n'%(self.nimages)))
+            f.write(self.sID+'     # sample name\n')
+            f.write(self.nroot+'     # plate name\n')
