@@ -806,12 +806,12 @@ def main_canvas():
 
     root.mainloop()
 
-print('\n Hope you find what you\'re looking for!  \n')
-GPIO.output(17, GPIO.LOW) #turn off light1
-GPIO.output(18, GPIO.LOW) #turn off light2
-s.write(('m5 \n').encode('utf-8')) #turn off light2
-s.close() # Close serial port 
-camera.stop_preview() # stop preview
+    print('\n Hope you find what you\'re looking for!  \n')
+    GPIO.output(17, GPIO.LOW) #turn off light1
+    GPIO.output(18, GPIO.LOW) #turn off light2
+    s.write(('m5 \n').encode('utf-8')) #turn off light2
+    s.close() # Close serial port 
+    camera.stop_preview() # stop preview
 
 if __name__ == "__main__":
     main()
