@@ -20,8 +20,10 @@ corner='unset'
 viewing=False; running=False; stopit=False
 lighting1=False;lighting2=False
 config = None
+s = None
 
 def main():
+    global s
     print('\n Bonjour, ami \n')
     if not os.path.isdir("images"): # check to be sure images directory exists
         print('"images" directory (or symbolic link) not found. \n' +
