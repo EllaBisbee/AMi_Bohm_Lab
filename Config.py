@@ -2,7 +2,7 @@
 Config handles all aspects of the configuration file
 
 Ramon Fernandes, Ella Bisbe
-Version 0.0.1
+Version 0.0.2
 """
 
 import re
@@ -44,7 +44,7 @@ class Config():
     nimages    : number of images per drop
     nroot      : plate name (no spaces)
     sID        : sample name (no spaces)
-    alphabet   : TODO ?????
+    alphabet   : used to keep track of labels for wells
     samp_coord : fractional coordinates of the individual samples
     """
     def __init__(self, fname):
@@ -56,7 +56,7 @@ class Config():
     
     """
     Retrieves the next line from the given file stream.
-    Strips comments from the line and applied f to each item on the line
+    Strips comments from the line and applies f to each item on the line
     Returns a list containing the mapped items.
 
     Parameters
@@ -73,45 +73,16 @@ class Config():
     @staticmethod
     def print_help():
         print(' The format of the configuration file was not right. It should look something like this:')
-        print('  12   8    1        # number of positions along x and y and on the plate then number of samples at each position') 
-        print('  134.2  29.3  7.5   # coordinates of the top left drop')
-        print('   35.2  28.7  7.3   # coordinates of the top right drop')
-        print('  133.5  92.9  7.1   # coordinates of the bottom left drop')
-        print('   35.0  91.9  7.0   # coordinates of the bottom right drop')
-        print('    0.    0.         # offsets for each sample (first sample is always 0. 0.)')
-        print('   0.3               # image spacing in z')
-        print('   4                 # number of images per drop')
-        print('   AMi_sample        # sample name (no spaces)')
-        print('   AB_xs2            # plate name (no spaces)')
-    
-    def set_fname(self, fname):
-        self.fname = fname
-    def set_nx(self, nx):
-        self.nx = nx
-    def set_ny(self, ny):
-        self.ny = ny
-    def set_samps(self, samps):
-        self.samps = samps
-    def set_tl(self, tl):
-        self.tl = tl
-    def set_tr(self, tr):
-        self.tr = tr
-    def set_bl(self, bl):
-        self.bl = bl
-    def set_br(self, br):
-        self.br = br
-    def set_samp_coord(self, samp_coord):
-        self.samp_coord = samp_coord
-    def set_zstep(self, zstep):
-        self.zstep = zstep
-    def set_nimages(self, nimages):
-        self.nimages = nimages
-    def set_sID(self, sID):
-        self.sID = sID
-    def set_nroot(self, nroot):
-        self.nroot = nroot
-    def set_alphabet(self, alphabet):
-        self.alphabet = alphabet
+        print(' 12   8    1        # number of positions along x and y and on the plate then number of samples at each position') 
+        print(' 134.2  29.3  7.5   # coordinates of the top left drop')
+        print(' 35.2  28.7  7.3    # coordinates of the top right drop')
+        print(' 133.5  92.9  7.1   # coordinates of the bottom left drop')
+        print(' 35.0  91.9  7.0    # coordinates of the bottom right drop')
+        print(' 0.    0.           # offsets for each sample (first sample is always 0. 0.)')
+        print(' 0.3                # image spacing in z')
+        print(' 4                  # number of images per drop')
+        print(' AMi_sample         # sample name (no spaces)')
+        print(' AB_xs2             # plate name (no spaces)')
 
     def write(self):
         with open(self.fname, "w") as f:
@@ -121,8 +92,10 @@ class Config():
             f.write(str('%9.3f%9.3f%9.3f  # coordinates of the bottom left sample\n'%(self.bl[0],self.bl[1],self.bl[2])))
             f.write(str('%9.3f%9.3f%9.3f  # coordinates of the bottom right sample\n'%(self.br[0],self.br[1],self.br[2])))
             for i in range(self.samps):
-                try: test=self.samp_coord[i]
-                except: self.samp_coord.append([0., 0.])
+                try: 
+                    test=self.samp_coord[i]
+                except: 
+                    self.samp_coord.append([0., 0.])
                 ta=float(self.samp_coord[i][0])
                 tb=float(self.samp_coord[i][1])
                 f.write(str('%9.4f%9.4f  # fractional offsets of sub-sample \n'%(ta,tb)))

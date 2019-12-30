@@ -82,7 +82,7 @@ def read_config(fname='AMi.config'):  # read information from the configuration 
         config = Config(fname)
     except:
         Config.print_help()
-        if fname=='AMi.config': sys.exit()
+        if fname=='AMi.config': sys.exit() #TODO: what does this do?
 
 def tdate(): # get the current date as a nice string
    dstr=(datetime.now().strftime('%h-%d-%Y_%I:%M%p')) 
@@ -112,14 +112,14 @@ def write_b():
         filee.insert(0,""); 
         canvas.update()
     else:
-        config.set_fname(tmp_fname)
-        config.set_nx(int(nxe.get()))
-        config.set_ny(int(nye.get()))
-        config.set_samps(int(sampse.get()))
-        config.set_nimages(int(nimge.get()))
-        config.set_zstep(float(zspe.get()))
-        config.set_sID(str(sIDe.get()))
-        config.set_nroot(str(IDe.get()))
+        config.fname = tmp_fname
+        config.nx = int(nxe.get())
+        config.ny = int(nye.get())
+        config.samps = int(sampse.get())
+        config.nimages = int(nimge.get())
+        config.zstep = float(zspe.get())
+        config.sID = str(sIDe.get())
+        config.nroot = str(IDe.get())
 
         config.write()
         canvas.create_rectangle(2,2,318,60,fill='white')
@@ -127,7 +127,7 @@ def write_b():
 
 def read_b(event): #read parameters from specified configuration file 
     global filee
-    config.set_fname(str(filee.get()))
+    config.fname = str(filee.get())
     read_config(fname=config.fname)
     filee.delete(0,tk.END); filee.insert(0,config.fname)
     nxe.delete(0,tk.END); nxe.insert(0,config.nx)
@@ -220,10 +220,12 @@ def tl_left_b(event):
 
 def tl_right_b(event):
          global xcol,yrow,samp,mx,my,mz,corner
-         config.set_samps(int(sampse.get()))
+         config.samps = int(sampse.get())
          for i in range(config.samps): 
-             try: test=config.samp_coord[i]
-             except: config.set_samp_coord(config.samp_coord.append([0., 0.]))
+            try:
+                test=config.samp_coord[i]
+            except:
+                config.samp_coord = config.samp_coord.append([0., 0.])
          print('samp_coord',config.samp_coord)
          if config.samps>1:
             samp+=1
@@ -265,22 +267,22 @@ def set_b(event):
           global mx,my,mz,xcol,yrow,corner,config
           m=[mx,my,mz]
           if corner=="TL":
-             config.set_tl(m)
+             config.tl = m
              print('new tl',config.tl)
           if corner=="TR":
-             config.set_tr(m)
+             config.tr = m
              print('new tr',config.tr)
           if corner=="BL":
-             config.set_bl(m)
+             config.bl = m
              print('new bl',config.bl)
           if corner=="BR":
-             config.set_br(m)
+             config.br = m
              print('new br',config.br)
           if corner.isdigit():
             tmp_samp_coord = config.samp_coord
             tmp_samp_coord[(int(corner))][0]=(m[0]-config.tl[0])/(config.tr[0]-config.tl[0])
             tmp_samp_coord[(int(corner))][1]=(m[1]-config.tl[1])/(config.bl[1]-config.tl[1])
-            config.set_samp_coord(tmp_samp_coord)
+            config.samp_coord = tmp_samp_coord
             print('new sample '+corner+' coordinates: '+str(config.samp_coord[(int(corner))]))
           canvas.create_rectangle(2,2,318,60,fill='white')
           if corner=='unset':canvas.create_text(160,27,text=("You must first select a corner"),font="Helvetia 10")
@@ -343,8 +345,8 @@ def close_b(event): # Closes the interface if not collecting images.  Stops the 
        root.quit()
 
 def snap_b(event): # takes a simple snapshot of the current view
-         config.set_sID(str(sIDe.get()))
-         config.set_nroot(str(IDe.get()))
+         config.sID = str(sIDe.get())
+         config.nroot = str(IDe.get())
          path1='images/'+config.sID
          if not os.path.isdir(path1):
            os.mkdir(path1)
@@ -368,10 +370,10 @@ def snap_b(event): # takes a simple snapshot of the current view
 
 def snap_br(event): #right mouse snap - takes a series of z-stacked pictures using nimages and Z-spacing parameters
          global mx,my,mz
-         config.set_sID(str(sIDe.get()))
-         config.set_nroot(str(IDe.get()))
-         config.set_nimages(int(nimge.get()))
-         config.set_zstep(float(zspe.get()))
+         config.sID = str(sIDe.get())
+         config.nroot = str(IDe.get())
+         config.nimages = int(nimge.get())
+         config.zstep = float(zspe.get())
          samp_name=config.alphabet[yrow]+str(xcol+1)
          if config.samps>1:samp_name+=Lalphabet[samp]
          path1='images/'+config.sID
@@ -445,11 +447,11 @@ def light2_b(event): # this controls both the lower 120V AC output and the 24V D
 def run_b(event):
          global yrow,xcol,samp,mx,my,mz,corner,running,viewing,lighting1,lighting2,stopit
          write_b() # get data from the GUI window and save/update the configuration file... 
-         config.set_nimages(int(nimge.get()))
-         config.set_samps(int(sampse.get()))
-         config.set_zstep(float(zspe.get()))
-         config.set_sID(str(sIDe.get()))
-         config.set_nroot(str(IDe.get()))
+         config.nimages = int(nimge.get())
+         config.samps = int(sampse.get())
+         config.zstep = float(zspe.get())
+         config.sID = str(sIDe.get())
+         config.nroot = str(IDe.get())
          yrow=0; xcol=0; samp=0
          mcoords() #go to A1 
          imgpath='images/'+config.sID
@@ -525,7 +527,7 @@ def run_b(event):
          
 def goto_b(event):
          global xcol,yrow,mx,my,mz,corner,samp,pose_txt
-         config.set_samps(int(sampse.get()))
+         config.samps = int(sampse.get())
          corner='unset'
          canvas.update()
          pose_txt=str(pose.get())
@@ -566,7 +568,7 @@ def goto_b(event):
 
 def prev_bl(event):
          global xcol,yrow,samp,mx,my,mz,corner
-         config.set_samps(int(sampse.get()))
+         config.samps = int(sampse.get())
          corner='unset'
          canvas.create_rectangle(2,2,318,60,fill='white')
          if samp>0:
@@ -587,7 +589,7 @@ def prev_bl(event):
 
 def prev_br(event):
         global xcol,yrow,mx,my,mz,corner
-        config.set_samps(int(sampse.get()))
+        config.samps = int(sampse.get())
         canvas.create_rectangle(2,2,318,60,fill='white')
         yrow-=1
         if yrow == -1: yrow=config.ny-1
@@ -595,7 +597,7 @@ def prev_br(event):
 
 def next_bl(event):
          global xcol,yrow,samp,mx,my,mz,corner
-         config.set_samps(int(sampse.get()))
+         config.samps = int(sampse.get())
          corner='unset'
          canvas.create_rectangle(2,2,318,60,fill='white')
          if samp<(config.samps-1):
@@ -616,7 +618,7 @@ def next_bl(event):
 
 def next_br(event):
          global xcol,yrow,mx,my,mz,corner
-         config.set_samps(int(sampse.get()))
+         config.samps = int(sampse.get())
          corner='unset'
          canvas.create_rectangle(2,2,318,60,fill='white')
          yrow+=1
@@ -804,7 +806,7 @@ def main_canvas():
     canvas.create_text(160,32,text=(" The corner samples must be centered and \n in focus before imaging. Use blue buttons \n to check alignment, and XYZ windows to \n make corrections.  Good luck!!"),font="Helvetia 10",fill="darkblue")
 
     canvas.update()
-    config.set_fname(str(filee.get()))
+    config.fname = str(filee.get())
     root.update()
 
     root.mainloop()
