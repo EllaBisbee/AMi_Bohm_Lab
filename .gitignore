@@ -1,3 +1,6 @@
 .vscode
 __pycache__
-AMi.config
+*.config
+.DS_Store
+*/.DS_Store
+images
