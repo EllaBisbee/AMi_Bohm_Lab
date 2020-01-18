@@ -658,7 +658,7 @@ def main_canvas():
     canvas.create_text(197,325,fill="darkblue",font="Helvetia 12 bold",text="-Y")
     canvas.create_text(20,80,fill="darkblue",font="Helvetia 12 bold",text="+Z")
     canvas.create_text(20,320,fill="darkblue",font="Helvetia 12 bold",text="-Z")
-
+ 
     # corner alignment tool
     canvas.create_rectangle(5,340,138,443,width=3,fill="lightgrey")
 

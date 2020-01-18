@@ -14,6 +14,7 @@ class MessageArea(Frame):
     def setText(self, t):
         self.text.set(t)
 
+#https://stackoverflow.com/questions/22835289/how-to-get-tkinter-canvas-to-dynamically-resize-to-window-width/22835732
 class TranslationTool(Frame):
     bcolor = "darkblue"
     bwidth = 2
@@ -98,6 +99,56 @@ class TranslationTool(Frame):
         xysetting.create_text(2,xydim["h"]/2, fill=labelcolor,font=labelfont, text="-X", anchor=SW)
         xysetting.create_text(xydim["w"],xydim["h"]/2, fill=labelcolor,font=labelfont, text="+X", anchor=SE)
 
+class CalibrationTool(Frame):
+    locationButtonColor = "skyblue1"
+    locationButtonFont = "Helvetia 12"
+    locationButtonActive = "green"
+    setButtonColor = "yellow"
+    setButtonFont = "Helvetia 12 bold"
+    setButtonActive = "green"
+    def __init__(self, parent):
+        Frame.__init__(self, parent, highlightbackground="black", 
+                                     highlightthickness=3, 
+                                     background="lightgrey")
+        self.update()
+        # Configure Grid for self-resizing
+        for row in range(3):
+            Grid.rowconfigure(self, row, weight=1)
+        for col in range(4):
+            Grid.columnconfigure(self, col, weight=1)
+
+        # location buttons
+        locationButtons = []
+        # Top-left
+        self.tlButton = Button(self, text="TL")
+        self.tlButton.grid(row=0, column=0, columnspan=2, sticky=N+E+S+W)
+        locationButtons.append(self.tlButton)
+
+        # Top-right
+        self.trButton = Button(self, text="TR")
+        self.trButton.grid(row=0, column=2, columnspan=2, sticky=N+E+S+W)
+        locationButtons.append(self.trButton)
+
+        # Bottom-left
+        self.blButton = Button(self, text="BL")
+        self.blButton.grid(row=2, column=0, columnspan=2, sticky=N+E+S+W)
+        locationButtons.append(self.blButton)
+
+        # Bottom-right
+        self.brButton = Button(self, text="BR")
+        self.brButton.grid(row=2, column=2, columnspan=2, sticky=N+E+S+W)
+        locationButtons.append(self.brButton)
+
+        for btn in locationButtons:
+            btn.config(font=self.locationButtonFont, bg=self.locationButtonColor,
+                       activebackground=self.locationButtonActive)
+
+        # set button
+        self.setButton = Button(self, text="SET", bg=self.setButtonColor,
+                                activebackground=self.setButtonActive,
+                                font=self.setButtonFont)
+        self.setButton.grid(row=1, column=1, columnspan=2, sticky=N+E+S+W)
+
 windowwidth = 320
 windowheight = 0
 root = Tk()
@@ -122,5 +173,10 @@ translationTool = TranslationTool(master)
 translationTool.grid(sticky=E+W)
 translationTool.update()
 translationTool.redraw()
+
+Grid.rowconfigure(master, 2, weight=1)
+Grid.columnconfigure(master, 1, weight=1)
+calibrationTool = CalibrationTool(master)
+calibrationTool.grid(column=0, sticky=E+W)
 
 root.mainloop()
