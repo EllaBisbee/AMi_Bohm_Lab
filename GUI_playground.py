@@ -19,28 +19,30 @@ class TranslationTool(Frame):
     bwidth = 2
 
     def __init__(self, parent):
-        Frame.__init__(self, parent, pady=1)
+        Frame.__init__(self, parent, pady=1, highlightthickness=0)
         self.update()
         Grid.rowconfigure(self, 0, weight=1)
         for i in range(10):
             Grid.columnconfigure(self, i, weight=1)
 
-        self.zsetting = Frame(self, highlightbackground=self.bcolor, 
-                                    highlightthickness=self.bwidth)
+        self.zsetting = Frame(self, highlightthickness=0)
         self.zsetting.rowconfigure(0, weight=1)
         self.zsetting.columnconfigure(0, weight=1)
-        self.zsettingCanvas = Canvas(self.zsetting, width=1, height=1)
+        self.zsettingCanvas = Canvas(self.zsetting, width=1, height=1, highlightthickness=0, bg="lightgrey")
+        self.zsettingCanvas.bind("<Configure>", self.onResize)
         self.zsettingCanvas.grid(row=0, column=0, sticky=N+E+S+W)
         self.zsetting.grid(row=0, column=0, sticky=W+E, padx=1)
 
-        self.xysetting = Frame(self, highlightbackground=self.bcolor, 
-                                     highlightthickness=self.bwidth)
+        self.xysetting = Frame(self, highlightthickness=0)
         self.xysetting.rowconfigure(0, weight=1)
         self.xysetting.columnconfigure(0, weight=1)
-        self.xysettingCanvas = Canvas(self.xysetting, width=1, height=1)
+        self.xysettingCanvas = Canvas(self.xysetting, width=1, height=1, highlightthickness=0, bg="lightgrey")
         self.xysettingCanvas.grid(sticky=N+E+S+W)
         self.xysetting.grid(row=0, column=1, columnspan=9, sticky=W+E, padx=1)
 
+        self.redraw()
+
+    def onResize(self, event):
         self.redraw()
     
     def redraw(self):
@@ -70,6 +72,7 @@ class TranslationTool(Frame):
         # create zsetting
         zsetting.delete("all")
         zsetting.config(width=zdim["w"], height=zdim["h"])
+        zsetting.create_rectangle(1,1,zdim["w"]-1,zdim["h"]-1, outline=self.bcolor, width=self.bwidth)
         zsetting.create_line(0,zdim["h"]/2, zdim["w"], zdim["h"]/2, width=2)
         for i in range(1, int(zdim["h"]/2/spacing) + 1): #z lines
             zsetting.create_line(linescuttoff, zdim["h"]/2 - i * spacing,
@@ -83,6 +86,7 @@ class TranslationTool(Frame):
 
         xysetting.delete("all")
         xysetting.config(width=xydim["w"], height=xydim["h"])
+        xysetting.create_rectangle(1,1,xydim["w"]-1,xydim["h"]-1, outline=self.bcolor, width=self.bwidth)
         xysetting.create_line(xydim["w"]/2,0,xydim["w"]/2,xydim["h"], width=2) #xy vertical
         xysetting.create_line(0, xydim["h"]/2, xydim["w"], xydim["h"]/2, width=2) #xy horizontal
         for i in range(1, int(xydim["w"]/2/spacing) + 1): #xy circles
@@ -117,6 +121,6 @@ Grid.rowconfigure(master, 1, weight=1)
 translationTool = TranslationTool(master)
 translationTool.grid(sticky=E+W)
 translationTool.update()
-translationTool.redraw() # TODO: redraw translation tool on window resize?
+translationTool.redraw()
 
 root.mainloop()
