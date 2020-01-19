@@ -149,6 +149,33 @@ class CalibrationTool(Frame):
                                 font=self.setButtonFont)
         self.setButton.grid(row=1, column=1, columnspan=2, sticky=N+E+S+W)
 
+class GeneralControls(Frame):
+    def __init__(self, parent):
+        Frame.__init__(self, parent)
+
+        # Configure Grid for self-resizing
+        for row in range(3):
+            Grid.rowconfigure(self, row, weight=1)
+        for col in range(2):
+            Grid.columnconfigure(self, col, weight=1)
+
+        self.viewButton = Button(self, text="VIEW", font="Helvetia 12 bold", fg="black")
+        self.viewButton.configure(background="orange", activebackground="green")
+        self.viewButton.grid(columnspan=2, sticky=N+E+S+W)
+        
+        supplementaryButton = []
+        self.resetButton = Button(self, text="reset origin")
+        self.resetButton.grid(row=1, column=0, sticky=N+E+S+W)
+        
+        self.closeButton = Button(self, text="stop/close")
+        self.closeButton.grid(row=1, column=1, sticky=N+E+S+W)
+
+        self.light1Button = Button(self, text="light1")
+        self.light1Button.grid(row=2, column=0, sticky=N+E+S+W)
+
+        self.light2Button = Button(self, text="light2")
+        self.light2Button.grid(row=2, column=1, sticky=N+E+S+W)
+
 windowwidth = 320
 windowheight = 0
 root = Tk()
@@ -175,8 +202,16 @@ translationTool.update()
 translationTool.redraw()
 
 Grid.rowconfigure(master, 2, weight=1)
-Grid.columnconfigure(master, 1, weight=1)
-calibrationTool = CalibrationTool(master)
-calibrationTool.grid(column=0, sticky=E+W)
+calibrationAndControls = Frame(master)
+calibrationAndControls.grid(sticky=E+W)
+
+Grid.rowconfigure(calibrationAndControls, 0, weight=1)
+Grid.columnconfigure(calibrationAndControls, 0, weight=1)
+Grid.columnconfigure(calibrationAndControls, 1, weight=1)
+calibrationTool = CalibrationTool(calibrationAndControls)
+calibrationTool.grid(row=0, column=0, sticky=E+W)
+
+generalControls = GeneralControls(calibrationAndControls)
+generalControls.grid(row=0, column=1, sticky=E+W)
 
 root.mainloop()
