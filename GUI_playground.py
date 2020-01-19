@@ -176,6 +176,56 @@ class GeneralControls(Frame):
         self.light2Button = Button(self, text="light2")
         self.light2Button.grid(row=2, column=1, sticky=N+E+S+W)
 
+class MovementTool(Frame):
+    def __init__(self, parent):
+        Frame.__init__(self, parent, highlightbackground="black",
+                                     highlightthickness=3,
+                                     background="lightgrey")
+
+        # Configure grid for self-resizing
+        for row in range(2):
+            Grid.rowconfigure(self, row, weight=1)
+        for col in range(2):
+            Grid.columnconfigure(self, col, weight=1)
+
+        buttons = []
+        self.gotoButton = Button(self, text="go to")
+        self.gotoButton.grid(row=0, column=0, sticky=N+E+S+W)
+        buttons.append(self.gotoButton)
+
+        self.pose = Entry(self)
+        self.pose.insert(10, "A1")
+        self.pose.grid(row=0, column=1, sticky=N+E+S+W)
+
+        self.prevButton = Button(self, text="prev")
+        self.prevButton.grid(row=1, column=0, sticky=N+E+S+W)
+        buttons.append(self.prevButton)
+
+        self.nextButton = Button(self, text="next")
+        self.nextButton.grid(row=1, column=1, sticky=N+E+SW)
+        buttons.append(self.nextButton)
+
+        for btn in buttons:
+            btn.config(background="cyan2", activebackground="green")
+
+class ImagingControls(Frame):
+    def __init__(self, parent):
+        Frame.__init__(self, parent)
+
+        # Configure grid for self-resizing
+        for row in range(2):
+            Grid.rowconfigure(self, row, weight=1)
+        for col in range(1):
+            Grid.columnconfigure(self, col, weight=1)
+
+        self.snapButton = Button(self, text="SNAP IMAGE", font="Helvetia 12 bold",
+                                 fg="white", background="medium blue", activebackground="green")
+        self.snapButton.grid(sticky=N+E+S+W)
+
+        self.runButton = Button(self, text="RUN", font="Helvetia 12 bold",
+                                fg="yellow", background="black", activebackground="green")
+        self.runButton.grid(sticky=N+E+S+W)
+
 windowwidth = 320
 windowheight = 0
 root = Tk()
@@ -201,17 +251,32 @@ translationTool.grid(sticky=E+W)
 translationTool.update()
 translationTool.redraw()
 
+### Calibration and Controls
 Grid.rowconfigure(master, 2, weight=1)
 calibrationAndControls = Frame(master)
 calibrationAndControls.grid(sticky=E+W)
-
 Grid.rowconfigure(calibrationAndControls, 0, weight=1)
 Grid.columnconfigure(calibrationAndControls, 0, weight=1)
 Grid.columnconfigure(calibrationAndControls, 1, weight=1)
+
 calibrationTool = CalibrationTool(calibrationAndControls)
 calibrationTool.grid(row=0, column=0, sticky=E+W)
 
 generalControls = GeneralControls(calibrationAndControls)
 generalControls.grid(row=0, column=1, sticky=E+W)
+
+## Movement and Imaging
+Grid.rowconfigure(master, 3, weight=1)
+movementAndImaging = Frame(master)
+movementAndImaging.grid(sticky=E+W)
+Grid.rowconfigure(movementAndImaging, 0, weight=1)
+Grid.columnconfigure(movementAndImaging, 0, weight=1)
+Grid.columnconfigure(movementAndImaging, 1, weight=1)
+
+movementTool = MovementTool(movementAndImaging)
+movementTool.grid(row=0, column=0, sticky=E+W)
+
+imagingControls = ImagingControls(movementAndImaging)
+imagingControls.grid(row=0, column=1, sticky=E+W)
 
 root.mainloop()
