@@ -3,10 +3,11 @@ from tkinter import *
 class MessageArea(Frame):
     def __init__(self, parent, text, wraplength=None):
         Frame.__init__(self, parent, highlightbackground="black", 
-                                     highlightthickness=1)
+                                     highlightthickness=1,
+                                     background=parent['bg'])
         self.text = StringVar()
         self.text.set(text)
-        self.label = Label(self, textvariable=self.text)
+        self.label = Label(self, textvariable=self.text, background=parent['bg'])
         if wraplength:
             self.label.config(wraplength=wraplength)
         self.label.pack()
@@ -20,7 +21,7 @@ class TranslationTool(Frame):
     bwidth = 2
 
     def __init__(self, parent):
-        Frame.__init__(self, parent, pady=1, highlightthickness=0)
+        Frame.__init__(self, parent, pady=1, highlightthickness=0, background=parent['bg'])
         self.update()
         Grid.rowconfigure(self, 0, weight=1)
         for i in range(10):
@@ -151,7 +152,7 @@ class CalibrationTool(Frame):
 
 class GeneralControls(Frame):
     def __init__(self, parent):
-        Frame.__init__(self, parent)
+        Frame.__init__(self, parent, background=parent['bg'])
 
         # Configure Grid for self-resizing
         for row in range(3):
@@ -210,7 +211,7 @@ class MovementTool(Frame):
 
 class ImagingControls(Frame):
     def __init__(self, parent):
-        Frame.__init__(self, parent)
+        Frame.__init__(self, parent, padx=3, background=parent['bg'])
 
         # Configure grid for self-resizing
         for row in range(2):
@@ -226,6 +227,78 @@ class ImagingControls(Frame):
                                 fg="yellow", background="black", activebackground="green")
         self.runButton.grid(sticky=N+E+S+W)
 
+class LabelForEntry(Label):
+    def __init__(self, parent, text):
+        Label.__init__(self, parent, text=text, 
+                                     background=parent['bg'], 
+                                     font='Helvetia 10',
+                                     anchor=E)
+
+class AutoImagingTool(Frame):
+    def __init__(self, parent):
+        Frame.__init__(self, parent, highlightbackground="black", 
+                                     highlightthickness=3, 
+                                     background="lightgrey")
+
+        # Configure Grid for self-resizing
+        for row in range(8):
+            Grid.rowconfigure(self, row, weight=1)
+        for col in range(3):
+            Grid.columnconfigure(self, col, weight=1)
+
+        buttons = []
+        self.updatebtn = Button(self, text="write/update") # update file
+        self.updatebtn.grid(row=0, column=2, rowspan=4, sticky=N+E+S+W)
+        buttons.append(self.updatebtn)
+
+        self.readbtn = Button(self, text="read file") # read file
+        self.readbtn.grid(row=4, column=2, rowspan=4, sticky=N+E+S+W)
+        buttons.append(self.readbtn)
+
+        for btn in buttons:
+            btn.configure(font='helvetia 10',
+                          width=8,
+                          background='yellow',
+                          activebackground='green')
+
+        labels = []
+        entries = []
+        labels.append(LabelForEntry(self, text='Filename:'))
+        self.filee = Entry(self)
+        entries.append(self.filee)
+
+        labels.append(LabelForEntry(self, text='Sample ID:'))
+        self.sIDe = Entry(self)
+        entries.append(self.sIDe)
+
+        labels.append(LabelForEntry(self, text='Plate ID:'))
+        self.pIDe = Entry(self)
+        entries.append(self.pIDe)
+
+        labels.append(LabelForEntry(self, text='nx:'))
+        self.nxe = Entry(self, width=3)
+        entries.append(self.nxe)
+
+        labels.append(LabelForEntry(self, text='ny:'))
+        self.nye = Entry(self, width=3)
+        entries.append(self.nye)
+
+        labels.append(LabelForEntry(self, text='samples/pos:'))
+        self.sampse = Entry(self, width=3)
+        entries.append(self.sampse)
+
+        labels.append(LabelForEntry(self, text='n_images:'))
+        self.nimge = Entry(self, width=3)
+        entries.append(self.nimge)
+
+        labels.append(LabelForEntry(self, text='Z-spacing:'))
+        self.zpse = Entry(self, width=3)
+        entries.append(self.zpse)
+
+        for i, label in enumerate(labels):
+            label.grid(row=i, column=0, sticky=N+E+S+W)
+            entries[i].grid(row=i, column=1, sticky=N+E+S+W)
+
 windowwidth = 320
 windowheight = 0
 root = Tk()
@@ -238,6 +311,7 @@ Grid.rowconfigure(root, 0, weight=1)
 Grid.columnconfigure(root, 0, weight=1)
 
 master = Frame(root)
+master.configure(background='white')
 master.grid(row=0, column=0, sticky=N+S+E+W)
 
 Grid.rowconfigure(master, 0, weight=1)
@@ -253,7 +327,7 @@ translationTool.redraw()
 
 ### Calibration and Controls
 Grid.rowconfigure(master, 2, weight=1)
-calibrationAndControls = Frame(master)
+calibrationAndControls = Frame(master, background=master['bg'], pady=3)
 calibrationAndControls.grid(sticky=E+W)
 Grid.rowconfigure(calibrationAndControls, 0, weight=1)
 Grid.columnconfigure(calibrationAndControls, 0, weight=1)
@@ -267,7 +341,7 @@ generalControls.grid(row=0, column=1, sticky=E+W)
 
 ## Movement and Imaging
 Grid.rowconfigure(master, 3, weight=1)
-movementAndImaging = Frame(master)
+movementAndImaging = Frame(master, background=master['bg'], pady=3)
 movementAndImaging.grid(sticky=E+W)
 Grid.rowconfigure(movementAndImaging, 0, weight=1)
 Grid.columnconfigure(movementAndImaging, 0, weight=1)
@@ -278,5 +352,11 @@ movementTool.grid(row=0, column=0, sticky=E+W)
 
 imagingControls = ImagingControls(movementAndImaging)
 imagingControls.grid(row=0, column=1, sticky=E+W)
+
+
+## Auto-imaging
+Grid.rowconfigure(master, 4, weight=1)
+autoimaging = AutoImagingTool(master)
+autoimaging.grid(sticky=E+W)
 
 root.mainloop()
