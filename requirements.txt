@@ -1,0 +1,6 @@
+pyserial
+numpy
+
+# Raspberry Pi Requirements (Do not install locally)
+#picamera
+#RPi.GPIO
