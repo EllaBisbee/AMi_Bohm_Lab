@@ -353,10 +353,12 @@ movementTool.grid(row=0, column=0, sticky=E+W)
 imagingControls = ImagingControls(movementAndImaging)
 imagingControls.grid(row=0, column=1, sticky=E+W)
 
-
 ## Auto-imaging
 Grid.rowconfigure(master, 4, weight=1)
 autoimaging = AutoImagingTool(master)
 autoimaging.grid(sticky=E+W)
+
+# start message
+topMessage.setText("The corner samples must be centered and in focus before imaging. Use blue buttons to check alignment, and XYZ windows to make corrections. Good luck!!")
 
 root.mainloop()
