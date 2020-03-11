@@ -62,6 +62,7 @@ class TranslationTool(Frame):
         xysetting = self.xysettingCanvas
 
         # calculate window size
+        print(self.zsetting.winfo_width())
         zdim = {
             "w": self.zsetting.winfo_width(),
             "h": self.xysetting.winfo_width()
@@ -235,7 +236,7 @@ class LabelForEntry(Label):
                                      anchor=E)
 
 class AutoImagingTool(Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, config=None, messagearea=None):
         Frame.__init__(self, parent, highlightbackground="black", 
                                      highlightthickness=3, 
                                      background="lightgrey")
@@ -248,11 +249,11 @@ class AutoImagingTool(Frame):
 
         buttons = []
         self.updatebtn = Button(self, text="write/update") # update file
-        self.updatebtn.grid(row=0, column=2, rowspan=4, sticky=N+E+S+W)
+        self.updatebtn.grid(row=2, column=2, rowspan=2, sticky=N+E+S+W)
         buttons.append(self.updatebtn)
 
         self.readbtn = Button(self, text="read file") # read file
-        self.readbtn.grid(row=4, column=2, rowspan=4, sticky=N+E+S+W)
+        self.readbtn.grid(row=4, column=2, rowspan=2, sticky=N+E+S+W)
         buttons.append(self.readbtn)
 
         for btn in buttons:
@@ -292,73 +293,50 @@ class AutoImagingTool(Frame):
         entries.append(self.nimge)
 
         labels.append(LabelForEntry(self, text='Z-spacing:'))
-        self.zpse = Entry(self, width=3)
-        entries.append(self.zpse)
+        self.zspe = Entry(self, width=3)
+        entries.append(self.zspe)
 
         for i, label in enumerate(labels):
             label.grid(row=i, column=0, sticky=N+E+S+W)
             entries[i].grid(row=i, column=1, sticky=N+E+S+W)
 
-windowwidth = 320
-windowheight = 0
-root = Tk()
-root.title('AMiGUI v1.0')
-root.minsize(windowwidth,windowheight)
-root.update()
+        self.config = config
+        if config:
+            self.filee.insert(0, config.fname)
+            self.sIDe.insert(0, config.sID)
+            self.pIDe.insert(0, config.nroot)
+            self.nxe.insert(0, config.nx)
+            self.nye.insert(0, config.ny)
+            self.sampse.insert(0, config.samps)
+            self.nimge.insert(0, config.nimages)
+            self.zspe.insert(0, config.zstep)
 
-# for selfresizing: https://stackoverflow.com/questions/7591294/how-to-create-a-self-resizing-grid-of-buttons-in-tkinter
-Grid.rowconfigure(root, 0, weight=1)
-Grid.columnconfigure(root, 0, weight=1)
+        self.messagearea = messagearea
 
-master = Frame(root)
-master.configure(background='white')
-master.grid(row=0, column=0, sticky=N+S+E+W)
+    def updatebtn_cb(self, event):
+        if not self.config:
+            self.messagearea.setText("There is not existing configuration to update. Nothing written")
+            return
+        
+        tmp_fname = str(self.filee.get())
+        if " " in tmp_fname:
+            self.messagearea.setText("file name cannot contain spaces. Nothing written.")
+            self.filee.delete(0,END)
+            self.filee.insert(0,"")
+            self.update()
+        else:
+            self.config.fname = tmp_fname
+            self.config.nx = int(self.nxe.get())
+            self.config.ny = int(self.nye.get())
+            self.config.samps = int(self.sampse.get())
+            self.config.nimages = int(self.nimge.get())
+            self.config.zstep = float(self.zspe.get())
+            self.config.sID = str(self.sIDe.get())
+            self.config.nroot = str(self.pIDe.get())
 
-Grid.rowconfigure(master, 0, weight=1)
-Grid.columnconfigure(master, 0, weight=1)
-topMessage = MessageArea(master, "Welcome AMi!", wraplength=windowwidth)
-topMessage.grid(sticky=E+W)
+            self.config.write()
+            self.messagearea.setText("parameters saved to " + tmp_fname)
 
-Grid.rowconfigure(master, 1, weight=1)
-translationTool = TranslationTool(master)
-translationTool.grid(sticky=E+W)
-translationTool.update()
-translationTool.redraw()
+    def readbtn_cb(self, event):
+        self.config.fname = str(filee.get())
 
-### Calibration and Controls
-Grid.rowconfigure(master, 2, weight=1)
-calibrationAndControls = Frame(master, background=master['bg'], pady=3)
-calibrationAndControls.grid(sticky=E+W)
-Grid.rowconfigure(calibrationAndControls, 0, weight=1)
-Grid.columnconfigure(calibrationAndControls, 0, weight=1)
-Grid.columnconfigure(calibrationAndControls, 1, weight=1)
-
-calibrationTool = CalibrationTool(calibrationAndControls)
-calibrationTool.grid(row=0, column=0, sticky=E+W)
-
-generalControls = GeneralControls(calibrationAndControls)
-generalControls.grid(row=0, column=1, sticky=E+W)
-
-## Movement and Imaging
-Grid.rowconfigure(master, 3, weight=1)
-movementAndImaging = Frame(master, background=master['bg'], pady=3)
-movementAndImaging.grid(sticky=E+W)
-Grid.rowconfigure(movementAndImaging, 0, weight=1)
-Grid.columnconfigure(movementAndImaging, 0, weight=1)
-Grid.columnconfigure(movementAndImaging, 1, weight=1)
-
-movementTool = MovementTool(movementAndImaging)
-movementTool.grid(row=0, column=0, sticky=E+W)
-
-imagingControls = ImagingControls(movementAndImaging)
-imagingControls.grid(row=0, column=1, sticky=E+W)
-
-## Auto-imaging
-Grid.rowconfigure(master, 4, weight=1)
-autoimaging = AutoImagingTool(master)
-autoimaging.grid(sticky=E+W)
-
-# start message
-topMessage.setText("The corner samples must be centered and in focus before imaging. Use blue buttons to check alignment, and XYZ windows to make corrections. Good luck!!")
-
-root.mainloop()
