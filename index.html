@@ -100,3 +100,37 @@ title: AMi Home
         </div>
     </div>
 </div>
+
+<div class="container py-3">
+    <h2 class="h2">Image enhancement example:</h2>
+    <div class="row">
+        <div class="col-md-7">
+            <p>The digital image enhancement serves two purposes:  First, it increases the depth of field.  Second, it relieves the necessity of having every drop perfectly in focus.  The software takes a z-stack (i.e. 3 images separated by 0.15 mm as shown) and creates a single image that contains the sharpest features of all of them.     The image on the right is one such image. The largest crystals are approximately 40 microns in length.</p>
+        </div>
+        <div class="col-md-5">
+            <figure class="figure">
+                <img src="{{ 'assets/images/enhancedimage.gif' | relative_url }}" class="figure-img img-fluid rounded" alt="Enhanced Image">
+                <figcaption class="figure-caption text-center">Digitally enhanced image produced from three pictures separated by 0.15 mm.</figcaption>
+            </figure>
+        </div>
+    </div>
+    
+    <div class="row">
+        <p>The three parent images are shown at below. These images are 2MP images, so the actual resolution is better than what you see.</p>
+        <div class="col-md-4">
+            <figure class="figure">
+                <img src="{{ 'assets/images/enhancedimage_parent1.gif' | relative_url }}" class="figure-img img-fluid rounded" alt="Enhanced Image Parent 1">
+            </figure>
+        </div>
+        <div class="col-md-4">
+            <figure class="figure">
+                <img src="{{ 'assets/images/enhancedimage_parent2.gif' | relative_url }}" class="figure-img img-fluid rounded" alt="Enhanced Image Parent 2">
+            </figure>
+        </div>
+        <div class="col-md-4">
+            <figure class="figure">
+                <img src="{{ 'assets/images/enhancedimage_parent3.gif' | relative_url }}" class="figure-img img-fluid rounded" alt="Enhanced Image Parent 3">
+            </figure>
+        </div>
+    </div>
+</div>
