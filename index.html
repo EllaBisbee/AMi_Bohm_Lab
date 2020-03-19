@@ -76,3 +76,27 @@ title: AMi Home
         <div class="col-md-2"></div>
     </div>
 </div>
+
+<div class="container py-3">
+    <h2 class="h2">Software Summary (<a href="{{ 'assets/documents/software.pdf' | relative_url }}">DETAILS</a>)</h2>
+    <div class="row">
+        <div class="col-md-7">
+            <p>3D printers and CNC machines use a text-based language known as G-code to control their movements. In the AMi system, a python-Tk based graphical user interface named AMiGUI controls the movements of the plate beneath the microscope and triggers acquisition of images of each sample. AMiGUI controls the translation stage through G-code commands. The AMiGUI software can be used to image an entire plate automatically, or it can be used to look at the sample drops manually in real time.</p>
+            <p>(<a href="{{ 'assets/misc/AMiGUI.py' | relative_url }}">HERE</a>) is the link for the AMiGUI.py program. To run it type “python3 AMiGUI.py”</p>
+            <p>If you would like to take multiple images spaced in Z, you can do so by specifying the number of images and the spacing between them in mm. These parameters are entered in the lower right part of the graphical user interface. When multiple z-stacked images are collected, a command file for automatically converting these images to a singe image with digitally enhanced depth of field is written in the same directory. The script requires that the program Enfuse, which is part of the Open Source <a href="http://hugin.sourceforge.net/">Hugin</a> package be installed.</p>
+            <p>AMi can also image plates with more than one sample well at each row/column index (i.e. a 96 well plate with three sample wells at each of the 96 positions). See the DETAILS link for more information.</p>
+
+            <h3 class="h3">Using the System (<a href="{{ 'assets/documents/use.pdf' | relative_url }}">DETAILS</a>)</h3>
+            <p><u>Sample movement:</u> The top part of the interface allows the plate to be moved beneath the microscope. Movements in X and Y are controlled by the part of the GUI that looks like a crosshair. Clicking in the Z-translation section changes the focus.</p>
+            <p><u>Alignment:</u> The system needs to know the precise positions of the four corner samples before automated imaging can commence. The TL, TR, BL, and BL buttons move the view to the top-left, top-right, bottom-left, and bottom-right samples, respectively. At each position, users can make small adjustments in centering and focus and then click SET to save the save the precise coordinates.</p>
+            <p><u>Mannual operation:</u> Once aligned, pushing the next and prev buttons move from drop to drop (i.e. A11> A12> B1> B2). Right-clicking these buttons moves up and down a row (i.e. D5 > E5). You can also enter a position (i.e. F11) and go right there. Left clicking the Snap Image button captures a single image. Right clicking the button collects a Z-stack of images.</p>
+            <p><u>Automated imaging:</u> Clicking the RUN button initiates automated imaging of the entire plate. Normally a z-stack of images is collected at each position, and a custom command file is written for depth of field enhancement.</p>
+        </div>
+        <div class="col-md-5">
+            <figure class="figure">
+                <img src="{{ 'assets/images/software.gif' | relative_url }}" class="figure-img img-fluid rounded" alt="GUI">
+                <figcaption class="figure-caption text-center">The AMiGUI graphical user interface is used to make manual movements, update the calibration file, manual inspect samples, take snapshots and automatically image the entire plate.</figcaption>
+            </figure>
+        </div>
+    </div>
+</div>
