@@ -1,0 +1,8 @@
+.question-container {
+    padding-top: 1em;
+    padding-bottom: 1em;
+}
+
+.question-container .question {
+    font-weight: bold;
+}
