@@ -1,6 +1,6 @@
 ---
 layout: default
-title: AMi
+title: AMi Home
 ---
 
 <div class="container">
@@ -24,16 +24,55 @@ title: AMi
                 programmed to image samples in 12 or 24 well plates 
                 as well. Plates with more than one sample at each 
                 row/column index are also supported. The 
-                computer-controlled stage yields reproducible 3D m
-                ovements of 160 mm in x, 100 mm in y, and 40mm in z. 
+                computer-controlled stage yields reproducible 3D
+                movements of 160 mm in x, 100 mm in y, and 40mm in z. 
                 To highlight what else is possible, here are a few 
                 images of some non-crystalline <a href="/other_samples.html">samples</a>.</p>
         </div>
         <div class="col-md-5">
             <figure class="figure">
-                <img src="{{ "assets/images/current.gif" | relative_url }}" class="figure-img img-fluid rounded" alt="Current version">
-                <figcaption class="figure-caption text-center">Current version of the AMi microscope system.</figcaption>
+                <img src="{{ 'assets/images/current.gif' | relative_url }}" class="figure-img img-fluid rounded" alt="Current version">
+                <figcaption class="figure-caption text-center">Current version of the AMi microscope system</figcaption>
             </figure>
         </div>
+    </div>
+</div>
+
+<div class="container py-3">
+    <h2 class="h2">Hardware Summary (<a href="{{ 'assets/documents/hardware.pdf' | relative_url }}">DETAILS</a>)</h2>
+    <div class="row">
+        <div class="col-md-7">
+            <p>The 3D translation stage is built from the light-duty CNC machine (~$135) shown on the right. The original machine allowed computer-controlled translation of the rotary cutting tool in X and Z, and translation of the object being cut along Y.</p>
+            <p>To convert the CNC machine to a 3D microscope stage, you’ll need to rearrange the parts, add some new, 3D printed parts, and screw the whole thing to stable base. You will also need to add a sample holder in place of the cutting tool, securely mount a microscope and camera, and connect the camera such that images can be triggered by the arduino-based board that drives the CNC machine. Construction requires a small amount of soldering, and some of the parts that hold the microscope and sample holder are 3D printed. You will also need access to a table saw and drill press.</p>
+            <p>The <a href="{{ 'assets/documents/hardware.pdf' | relative_url }}">DETAILS</a> page provides much more information.</p>
+            <p>Plans for the 3D printed parts are <a href="{{ 'assets/misc/parts.tar' | relative_url }}">HERE</a>.</p>
+        </div>
+        <div class="col-md-5">
+            <figure class="figure">
+                <img src="{{ 'assets/images/cncmachine.png' | relative_url }}" class="figure-img img-fluid rounded" alt="Model 1610 CNC Machine">
+                <figcaption class="figure-caption text-center">Model 1610 CNC Machine</figcaption>
+            </figure>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-7">
+            <p>As shown on the right, it is possible to use the AMi translation stage with an existing microscope. To fully integrate the system, you’ll need to mount the picamera (an inexpensive board-based sensor chip) in place of the camera shown. 3D printing files for a C-mount adapter that will couple many microscopes to the picamera can be found with the other plans below.</p>
+            <p>Be careful. Some microscopes may tip in this configuration! Also, any movement between the microscope and the stage will necessitate recalibration. The calibration procedure is described in the details link below If you’re using existing optics, my recommendation is that you mount the microscope pole to the base of the translation stage rather than have is physically separated as in the photo.</p>
+        </div>
+        <div class="col-md-5">
+            <figure class="figure">
+                <img src="{{ 'assets/images/hardware.png' | relative_url }}" class="figure-img img-fluid rounded" alt="Model 1610 CNC Machine">
+            </figure>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            <figure class="figure">
+                <img src="{{ 'assets/images/componentconnections.gif' | relative_url }}" class="figure-img img-fluid rounded" alt="Model 1610 CNC Machine">
+                <figcaption class="figure-caption text-center">Connections between the component parts</figcaption>
+            </figure>
+        </div>
+        <div class="col-md-2"></div>
     </div>
 </div>
