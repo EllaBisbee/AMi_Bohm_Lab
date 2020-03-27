@@ -525,6 +525,8 @@ class GUI(tk.Frame):
     def read_config(self, fname='AMi.config'): 
         try:
             self.config = Config(fname)
+        except ValueError:
+            print("Configuration file does not exist")
         except:
             Config.print_help()
             if fname=='AMi.config': sys.exit() #TODO: what does this do?
