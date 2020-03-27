@@ -345,61 +345,52 @@ class ConfigurationTool(tk.Frame):
                     highlightthickness=3,
                     background="lightgrey")
         self.parent = parent
-        self.configureRows(8)
-        self.configureColumns(3)
-
+        self.configureRows(4)
+        self.configureColumns(10)
+        
         fillcell = tk.N + tk.E + tk.S + tk.W
         style = ttk.Style()
         style.configure('Config.TButton', font="Helvetia 10", width=8, background="yellow")
         style.map('Config.TButton', background=[('active', 'green'), ('pressed', 'green')])
         style.configure('Config.TLabel', background=self['bg'], font="Helvetia 10")
 
+        ttk.Label(self, text="File:", style="Config.TLabel", anchor=tk.E).grid(row=0, column=0, columnspan=2, sticky=fillcell,pady=2)
+        self.filee = ttk.Entry(self, width=1)
+        self.filee.grid(row=0, column=2, columnspan=3, pady=2, sticky=fillcell)
+
+        ttk.Label(self, text='Sample ID:', style="Config.TLabel", anchor=tk.E).grid(row=0, column=5, columnspan=3, sticky=fillcell,pady=2)
+        self.sIDe = ttk.Entry(self, width=1)
+        self.sIDe.grid(row=0, column=8, columnspan=2, pady=2, sticky=fillcell)
+
+        ttk.Label(self, text='Plate ID:', style="Config.TLabel", anchor=tk.E).grid(row=1, column=0, columnspan=2, sticky=fillcell, pady=2)
+        self.pIDe = ttk.Entry(self, width=1)
+        self.pIDe.grid(row=1, column=2, columnspan=3, pady=2, sticky=fillcell)
+
+        ttk.Label(self, text='samples/pos:', style="Config.TLabel", anchor=tk.E).grid(row=1, column=5, columnspan=4, sticky=fillcell, pady=2)
+        self.sampse = ttk.Entry(self, width=1)
+        self.sampse.grid(row=1, column=9, sticky=fillcell, pady=2)
+
+        ttk.Label(self, text='nx:', style="Config.TLabel", anchor=tk.E).grid(row=2, column=0, sticky=fillcell, pady=2)
+        self.nxe = ttk.Entry(self, width=1)
+        self.nxe.grid(row=2, column=1, sticky=fillcell, pady=2)
+
+        ttk.Label(self, text='ny:', style="Config.TLabel", anchor=tk.E).grid(row=2, column=2, sticky=fillcell, pady=2)
+        self.nye = ttk.Entry(self, width=1)
+        self.nye.grid(row=2, column=3, sticky=fillcell, pady=2)
+
+        ttk.Label(self, text='n_img:', style="Config.TLabel", anchor=tk.E).grid(row=2, column=4, sticky=fillcell, pady=2)
+        self.nimge = ttk.Entry(self, width=1)
+        self.nimge.grid(row=2, column=5, sticky=fillcell, pady=2)
+
+        ttk.Label(self, text='Z-spacing:', style="Config.TLabel", anchor=tk.E).grid(row=2, column=6, columnspan=2, sticky=fillcell, pady=2)
+        self.zspe = ttk.Entry(self, width=1)
+        self.zspe.grid(row=2, column=8, columnspan=2, sticky=fillcell, pady=2)
+
         self.updateButton = ttk.Button(self, text="write/update", style="Config.TButton")
-        self.updateButton.grid(row=2, column=2, rowspan=2, sticky=fillcell, padx=2, pady=2)
+        self.updateButton.grid(row=3, column=0, columnspan=5, sticky=fillcell, padx=2, pady=2)
 
         self.readButton = ttk.Button(self, text="read file", style="Config.TButton")
-        self.readButton.grid(row=4, column=2, rowspan=2, sticky=fillcell, padx=2, pady=2)
-
-        labels = []
-        entries = []
-        labels.append(ttk.Label(self, text="Filename:", style="Config.TLabel", anchor=tk.E))
-        self.filee = ttk.Entry(self)
-        entries.append(self.filee)
-
-        labels.append(ttk.Label(self, text='Sample ID:', style="Config.TLabel"))
-        self.sIDe = ttk.Entry(self)
-        entries.append(self.sIDe)
-
-        labels.append(ttk.Label(self, text='Plate ID:', style="Config.TLabel"))
-        self.pIDe = ttk.Entry(self)
-        entries.append(self.pIDe)
-
-        labels.append(ttk.Label(self, text='nx:', style="Config.TLabel"))
-        self.nxe = ttk.Entry(self, width=3)
-        entries.append(self.nxe)
-
-        labels.append(ttk.Label(self, text='ny:', style="Config.TLabel"))
-        self.nye = ttk.Entry(self, width=3)
-        entries.append(self.nye)
-
-        labels.append(ttk.Label(self, text='samples/pos:', style="Config.TLabel"))
-        self.sampse = ttk.Entry(self, width=3)
-        entries.append(self.sampse)
-
-        labels.append(ttk.Label(self, text='n_images:', style="Config.TLabel"))
-        self.nimge = ttk.Entry(self, width=3)
-        entries.append(self.nimge)
-
-        labels.append(ttk.Label(self, text='Z-spacing:', style="Config.TLabel"))
-        self.zspe = ttk.Entry(self, width=3)
-        entries.append(self.zspe)
-
-        fillcell = tk.N + tk.E + tk.S + tk.W
-        for i, label in enumerate(labels):
-            label.config(anchor=tk.E)
-            label.grid(row=i, column=0, sticky=fillcell, pady=2)
-            entries[i].config(width=0)
-            entries[i].grid(row=i, column=1, sticky=fillcell, pady=2)
+        self.readButton.grid(row=3, column=5, columnspan=5, sticky=fillcell, padx=2, pady=2)
     """
     Configures rows to resize appropriately when using Grid Manager
     """
