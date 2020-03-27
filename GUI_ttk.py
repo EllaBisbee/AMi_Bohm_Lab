@@ -3,6 +3,7 @@ from tkinter import ttk
 import sys, os
 
 from Config import Config
+from Microscope import Microscope
 
 class MessageArea(tk.Frame):
     """
@@ -117,9 +118,10 @@ class CalibrationTool(tk.Frame):
         tk.Frame.__init__(self, parent, highlightbackground="black", 
                           highlightthickness=3, background="lightgrey", 
                           *args, **kwargs)
-        self.parent = parent
+        self.parent = parent.parent # parent only acts as a container. bypass to its parent
         self.configureRows(3)
         self.configureColumns(4)
+        self.corner = None # track which corner to calibrate
 
         fillcell = tk.N + tk.E + tk.S + tk.W
         btnpad = 1
@@ -129,18 +131,23 @@ class CalibrationTool(tk.Frame):
         style.map("Calibration.TButton", background=[('active', 'green'), ('pressed', 'green')])
         # Top-left
         self.tlButton = ttk.Button(self, text="TL", style="Calibration.TButton", width=btnwidth)
+        self.tlButton.bind("<Button-1>", self.tl_left_cb)
+        self.tlButton.bind("<Button-3>", self.tl_right_cb)
         self.tlButton.grid(row=0, column=0, columnspan=2, sticky=fillcell, pady=btnpad, padx=btnpad)
 
         # Top-right
         self.trButton = ttk.Button(self, text="TR", style="Calibration.TButton", width=btnwidth)
+        self.trButton.bind("<Button-1>", self.tr_cb)
         self.trButton.grid(row=0, column=2, columnspan=2, sticky=fillcell, pady=btnpad, padx=btnpad)
 
         # Bottom-left
         self.blButton = ttk.Button(self, text="BL", style="Calibration.TButton", width=btnwidth)
+        self.blButton.bind("<Button-1>", self.bl_cb)
         self.blButton.grid(row=2, column=0, columnspan=2, sticky=fillcell, pady=btnpad, padx=btnpad)
 
         # Bottom-right
         self.brButton = ttk.Button(self, text="BR", style="Calibration.TButton", width=btnwidth)
+        self.brButton.bind("<Button-1>", self.br_cb)
         self.brButton.grid(row=2, column=2, columnspan=2, sticky=fillcell, pady=btnpad, padx=btnpad)
 
         # set button
@@ -148,6 +155,64 @@ class CalibrationTool(tk.Frame):
         style.map("Calibration-Set.TButton", background=[('active', 'green'), ('pressed', 'green')])
         self.setButton = ttk.Button(self, text="SET", style="Calibration-Set.TButton", width=btnwidth)
         self.setButton.grid(row=1, column=1, columnspan=2, sticky=fillcell, pady=btnpad, padx=btnpad)
+
+    def tl_left_cb(self, event):
+        self.corner = "TL"
+        self.parent.microscope.xcol = 0
+        self.parent.microscope.yrow = 0
+        self.parent.microscope.samp = 0
+        self.parent.microscope.mcoords()
+        if self.parent.config.samps > 1:
+            self.parent.messagearea.setText("SET now changes TL coordinates. After the corners Right Click TL for sub-samples")
+        else:
+            self.parent.messagearea.setText("SET now changes TL coordinates.")
+
+    def tl_right_cb(self, event):
+        config = self.parent.config
+        for i in range(config.samps):
+            #TODO: I don't think this look is necessary anymore since removing the update to config.samps within this function
+            try:
+                test = config.samp_coord[i]
+            except:
+                config.samp_coord = config.samp_coord.append([0., 0.])
+        print('samp_coord', config.samp_coord)
+        if config.samps > 1:
+            self.parent.microscope.samp += 1
+            if self.parent.microscope.samp == config.samps:
+                self.parent.microscope.samp = 1
+            self.corner = str(self.parent.microscope.samp)
+            self.parent.microscope.xcol = 0
+            self.parent.microscope.yrow = 0
+            self.parent.microscope.mcoords()
+            self.parent.messagearea.setText("SET now changes sub-sample " + 
+                                            config.get_sample_id(self.parent.microscope.samp) + 
+                                            " coordinates.")
+        else:
+            self.parent.messagearea.setText("no sub-samples specified.")
+
+    def tr_cb(self, event):
+        self.corner = "TR"
+        self.parent.microscope.xcol = self.parent.config.nx - 1
+        self.parent.microscope.yrow = 0
+        self.parent.microscope.samp = 0
+        self.parent.microscope.mcoords()
+        self.parent.messagearea.setText("SET now changes TR coordinates.")
+    
+    def bl_cb(self, event):
+        self.corner = "BL"
+        self.parent.microscope.xcol = 0
+        self.parent.microscope.yrow = self.parent.config.ny - 1
+        self.parent.microscope.samp = 0
+        self.parent.microscope.mcoords()
+        self.parent.messagearea.setText("SET now changes BL coordinates.")
+
+    def br_cb(self, event):
+        self.corner = "BR"
+        self.parent.microscope.xcol = self.parent.config.nx - 1
+        self.parent.microscope.yrow = self.parent.config.ny - 1
+        self.parent.microscope.samp = 0
+        self.parent.microscope.mcoords()
+        self.parent.messagearea.setText("SET now changes BR coordinates.")
 
     """
     Configures rows to resize appropriately when using Grid Manager
@@ -166,7 +231,7 @@ class CalibrationTool(tk.Frame):
 class HardwareControls(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, background=parent['bg'], *args, **kwargs)
-        self.parent = parent
+        self.parent = parent.parent # parent only acts as a container. bypass to its parent
         self.configureRows(3)
         self.configureColumns(2)
 
@@ -239,7 +304,7 @@ class MovementTool(tk.Frame):
         self.config(highlightbackground="black",
                     highlightthickness=3,
                     background="lightgrey")
-        self.parent = parent
+        self.parent = parent.parent # parent only acts as a container. bypass to its parent
         self.configureRows(2)
         self.configureColumns(2)
 
@@ -282,7 +347,7 @@ class ImagingControls(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.config(background=parent['bg'])
-        self.parent = parent
+        self.parent = parent.parent # parent only acts as a container. bypass to its parent
         self.configureRows(2)
         self.configureColumns(1)
 
@@ -484,6 +549,7 @@ class GUI(tk.Frame):
         # Set up initial configuration
         self.config = None
         self.read_config()
+        self.microscope = Microscope()
         
         # Create GUI Areas
         self.messagearea = MessageArea(self, text="Welcome AMi!")

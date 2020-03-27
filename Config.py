@@ -45,6 +45,8 @@ class Config():
     nroot      : plate name (no spaces)
     sID        : sample name (no spaces)
     alphabet   : used to keep track of labels for wells
+    Ualphabet  : Used to track main wells
+    Lalphabet  : Used to track sub-samples within each well
     samp_coord : fractional coordinates of the individual samples
     """
     def __init__(self, fname):
@@ -52,6 +54,8 @@ class Config():
             raise ValueError("invalid configuration file path.")
 
         self.fname = fname
+        self.Ualphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        self.Lalphabet = 'abcdefghijklmnopqrstuvwxyz'
         self.read()
     
     """
@@ -105,8 +109,8 @@ class Config():
             f.write(self.nroot+'     # plate name\n')
 
     def read(self):
-        Ualphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        Lalphabet='abcdefghijklmnopqrstuvwxyz'
+        Ualphabet=self.Ualphabet
+        Lalphabet=self.Lalphabet
 
         try:
             with open(self.fname, 'r') as f:
@@ -123,3 +127,6 @@ class Config():
                 self.alphabet=Ualphabet[0:self.ny]+Lalphabet[0:self.ny]
         except:
             raise Exception("invalid file format")
+
+    def get_sample_id(self, samp):
+        return self.Lalphabet[samp]
