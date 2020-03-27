@@ -120,29 +120,30 @@ class CalibrationTool(tk.Frame):
 
         fillcell = tk.N + tk.E + tk.S + tk.W
         btnpad = 1
+        btnwidth = 0
         style = ttk.Style()
         style.configure("Calibration.TButton", font="Helvetia 12", background="skyblue1")
         style.map("Calibration.TButton", background=[('active', 'green'), ('pressed', 'green')])
         # Top-left
-        self.tlButton = ttk.Button(self, text="TL", style="Calibration.TButton")
+        self.tlButton = ttk.Button(self, text="TL", style="Calibration.TButton", width=btnwidth)
         self.tlButton.grid(row=0, column=0, columnspan=2, sticky=fillcell, pady=btnpad, padx=btnpad)
 
         # Top-right
-        self.trButton = ttk.Button(self, text="TR", style="Calibration.TButton")
+        self.trButton = ttk.Button(self, text="TR", style="Calibration.TButton", width=btnwidth)
         self.trButton.grid(row=0, column=2, columnspan=2, sticky=fillcell, pady=btnpad, padx=btnpad)
 
         # Bottom-left
-        self.blButton = ttk.Button(self, text="BL", style="Calibration.TButton")
+        self.blButton = ttk.Button(self, text="BL", style="Calibration.TButton", width=btnwidth)
         self.blButton.grid(row=2, column=0, columnspan=2, sticky=fillcell, pady=btnpad, padx=btnpad)
 
         # Bottom-right
-        self.brButton = ttk.Button(self, text="BR", style="Calibration.TButton")
+        self.brButton = ttk.Button(self, text="BR", style="Calibration.TButton", width=btnwidth)
         self.brButton.grid(row=2, column=2, columnspan=2, sticky=fillcell, pady=btnpad, padx=btnpad)
 
         # set button
         style.configure("Calibration-Set.TButton", font="Helvetia 12 bold", background="yellow")
         style.map("Calibration-Set.TButton", background=[('active', 'green'), ('pressed', 'green')])
-        self.setButton = ttk.Button(self, text="SET", style="Calibration-Set.TButton")
+        self.setButton = ttk.Button(self, text="SET", style="Calibration-Set.TButton", width=btnwidth)
         self.setButton.grid(row=1, column=1, columnspan=2, sticky=fillcell, pady=btnpad, padx=btnpad)
 
     """
@@ -242,21 +243,22 @@ class MovementTool(tk.Frame):
         fillcell = tk.N + tk.E + tk.S + tk.W
         pady=3
         padx=5
+        width = 0
         style = ttk.Style()
         style.configure('Movement.TButton', background="cyan2")
         style.map('Movement.TButton', background=[('active', 'green'), ('pressed', 'green')])
 
-        self.gotoButton = ttk.Button(self, text="go to", style="Movement.TButton")
+        self.gotoButton = ttk.Button(self, text="go to", style="Movement.TButton", width=width)
         self.gotoButton.grid(row=0, column=0, sticky=fillcell, pady=pady, padx=padx)
 
-        self.pose = ttk.Entry(self)
-        self.pose.insert(10, "A1")
+        self.pose = ttk.Entry(self, width=width)
+        self.pose.insert(0, "A1")
         self.pose.grid(row=0, column=1, sticky=fillcell, pady=pady, padx=padx)
 
-        self.prevButton = ttk.Button(self, text="prev", style="Movement.TButton")
+        self.prevButton = ttk.Button(self, text="prev", style="Movement.TButton", width=width)
         self.prevButton.grid(row=1, column=0, sticky=fillcell, pady=pady, padx=padx)
 
-        self.nextButton = ttk.Button(self, text="next", style="Movement.TButton")
+        self.nextButton = ttk.Button(self, text="next", style="Movement.TButton", width=width)
         self.nextButton.grid(row=1, column=1, sticky=fillcell, pady=pady, padx=padx)
     
     """
@@ -396,6 +398,7 @@ class ConfigurationTool(tk.Frame):
         for i, label in enumerate(labels):
             label.config(anchor=tk.E)
             label.grid(row=i, column=0, sticky=fillcell, pady=2)
+            entries[i].config(width=0)
             entries[i].grid(row=i, column=1, sticky=fillcell, pady=2)
     """
     Configures rows to resize appropriately when using Grid Manager
@@ -414,8 +417,8 @@ class ConfigurationTool(tk.Frame):
 class GUI(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
-        self.configureRows(2)
-        self.configureColumns(2)
+        self.configureRows(5)
+        self.configureColumns(1)
         self.parent = parent
         
         self.messagearea = MessageArea(self, text="Welcome AMi!")
@@ -461,7 +464,9 @@ def main():
     root.update()
 
     # for selfresizing: https://stackoverflow.com/questions/7591294/how-to-create-a-self-resizing-grid-of-buttons-in-tkinter
-    GUI(root, background="white").pack(side="top", fill="both", expand=True)
+    frame = GUI(root, background="white")
+    frame.pack(side="top", fill="both", expand=True)
+    frame.messagearea.setText("The corner samples must be centered and in focus before imaging. Use blue buttons to check alignment, and XYZ windows to make corrections. Good luck!!")
     root.mainloop()
 
 if __name__ == "__main__":
