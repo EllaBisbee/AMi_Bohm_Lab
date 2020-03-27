@@ -1,5 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
+import sys, os
+
+from Config import Config
 
 class MessageArea(tk.Frame):
     """
@@ -354,13 +357,12 @@ class ConfigurationTool(tk.Frame):
         style.map('Config.TButton', background=[('active', 'green'), ('pressed', 'green')])
         style.configure('Config.TLabel', background=self['bg'], font="Helvetia 10")
 
-        ttk.Label(self, text="File:", style="Config.TLabel", anchor=tk.E).grid(row=0, column=0, columnspan=2, sticky=fillcell,pady=2)
         self.filee = ttk.Entry(self, width=1)
-        self.filee.grid(row=0, column=2, columnspan=3, pady=2, sticky=fillcell)
+        self.filee.grid(row=0, column=0, columnspan=3, pady=2, padx=(2,0), sticky=fillcell)
 
-        ttk.Label(self, text='Sample ID:', style="Config.TLabel", anchor=tk.E).grid(row=0, column=5, columnspan=3, sticky=fillcell,pady=2)
+        ttk.Label(self, text='Sample ID:', style="Config.TLabel", anchor=tk.E).grid(row=0, column=3, columnspan=2, sticky=fillcell,pady=2)
         self.sIDe = ttk.Entry(self, width=1)
-        self.sIDe.grid(row=0, column=8, columnspan=2, pady=2, sticky=fillcell)
+        self.sIDe.grid(row=0, column=5, columnspan=5, pady=2, sticky=fillcell)
 
         ttk.Label(self, text='Plate ID:', style="Config.TLabel", anchor=tk.E).grid(row=1, column=0, columnspan=2, sticky=fillcell, pady=2)
         self.pIDe = ttk.Entry(self, width=1)
@@ -387,10 +389,16 @@ class ConfigurationTool(tk.Frame):
         self.zspe.grid(row=2, column=8, columnspan=2, sticky=fillcell, pady=2)
 
         self.updateButton = ttk.Button(self, text="write/update", style="Config.TButton")
+        self.updateButton.bind("<Button-1>", self.updatebtn_cb)
         self.updateButton.grid(row=3, column=0, columnspan=5, sticky=fillcell, padx=2, pady=2)
 
         self.readButton = ttk.Button(self, text="read file", style="Config.TButton")
+        self.readButton.bind("<Button-1>", self.readbtn_cb)
         self.readButton.grid(row=3, column=5, columnspan=5, sticky=fillcell, padx=2, pady=2)
+
+        if self.parent.config:
+            self.update_entry_fields()
+
     """
     Configures rows to resize appropriately when using Grid Manager
     """
@@ -405,13 +413,79 @@ class ConfigurationTool(tk.Frame):
         for i in range(numcols):
             tk.Grid.columnconfigure(self, i, weight=1)
 
+    """
+    Callback function for update buttom
+    """
+    def updatebtn_cb(self, event):
+        if not self.parent.config:
+            self.messagearea.setText("There is not existing configuration to update. Nothing written")
+            return
+        
+        tmp_fname = str(self.filee.get())
+        if " " in tmp_fname:
+            self.parent.messagearea.setText("file name cannot contain spaces. Nothing written.")
+            self.filee.delete(0,END)
+            self.filee.insert(0,"")
+            self.update()
+        else:
+            self.parent.config.fname = tmp_fname
+            self.parent.config.nx = int(self.nxe.get())
+            self.parent.config.ny = int(self.nye.get())
+            self.parent.config.samps = int(self.sampse.get())
+            self.parent.config.nimages = int(self.nimge.get())
+            self.parent.config.zstep = float(self.zspe.get())
+            self.parent.config.sID = str(self.sIDe.get())
+            self.parent.config.nroot = str(self.pIDe.get())
+
+            self.parent.config.write()
+            self.parent.messagearea.setText("parameters saved to " + tmp_fname)
+
+    """
+    Callback function for read button
+    """
+    def readbtn_cb(self, event):
+        fname = str(self.filee.get())
+        self.parent.read_config(fname=fname)
+        self.update_entry_fields()
+        print('Parameters read from ' + fname)
+        self.update()
+    """
+    Updates the entry fields to match those in the Config module
+    """
+    def update_entry_fields(self):
+        # Clear fields
+        self.filee.delete(0, tk.END)
+        self.sIDe.delete(0, tk.END)
+        self.pIDe.delete(0, tk.END)
+        self.nxe.delete(0, tk.END)
+        self.nye.delete(0, tk.END)
+        self.sampse.delete(0, tk.END)
+        self.nimge.delete(0, tk.END)
+        self.zspe.delete(0, tk.END)
+
+        # update
+        config = self.parent.config
+        self.filee.insert(0, config.fname)
+        self.sIDe.insert(0, config.sID)
+        self.pIDe.insert(0, config.nroot)
+        self.nxe.insert(0, config.nx)
+        self.nye.insert(0, config.ny)
+        self.sampse.insert(0, config.samps)
+        self.nimge.insert(0, config.nimages)
+        self.zspe.insert(0, config.zstep)
+
 class GUI(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.configureRows(5)
         self.configureColumns(1)
         self.parent = parent
+
+        # Set up initial configuration
+        self.config = None
+        self.read_config()
         
+        # Create GUI Areas
         self.messagearea = MessageArea(self, text="Welcome AMi!")
         self.translationtool = TranslationTool(self)
         self.calibrationandhardware = CalibrationAndHardware(self)
@@ -422,6 +496,7 @@ class GUI(tk.Frame):
         self.imagingcontrols = self.movementandimaging.imagingcontrols
         self.configurationtool = ConfigurationTool(self)
 
+        # Add GUI Areas to Frame
         fillHorizontal = tk.E + tk.W
         separationpad = 3
         self.messagearea.grid(sticky=fillHorizontal)
@@ -444,7 +519,25 @@ class GUI(tk.Frame):
         for i in range(numcols):
             tk.Grid.columnconfigure(self, i, weight=1)
 
+    """
+    read information from the configuration file
+    """
+    def read_config(self, fname='AMi.config'): 
+        try:
+            self.config = Config(fname)
+        except:
+            Config.print_help()
+            if fname=='AMi.config': sys.exit() #TODO: what does this do?
+
 def main():
+    print('\n Bonjour, ami \n')
+    if not os.path.isdir("images"): # check to be sure images directory exists
+        print('"images" directory (or symbolic link) not found. \n' +
+             'This should be in the same directory as this program. \n' +
+             'You need to create the directory or fix the link before continuing. \n' +
+             'i.e. mkdir images')
+        sys.exit()
+
     # Set up GUI Window
     windowwidth = 320
     windowheight = 0
@@ -459,6 +552,9 @@ def main():
     frame.pack(side="top", fill="both", expand=True)
     frame.messagearea.setText("The corner samples must be centered and in focus before imaging. Use blue buttons to check alignment, and XYZ windows to make corrections. Good luck!!")
     root.mainloop()
+
+    # Exit procedures
+    print('\n Hope you find what you\'re looking for!  \n')
 
 if __name__ == "__main__":
     main()
