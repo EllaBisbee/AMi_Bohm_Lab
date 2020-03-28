@@ -154,6 +154,7 @@ class CalibrationTool(tk.Frame):
         style.configure("Calibration-Set.TButton", font="Helvetia 12 bold", background="yellow")
         style.map("Calibration-Set.TButton", background=[('active', 'green'), ('pressed', 'green')])
         self.setButton = ttk.Button(self, text="SET", style="Calibration-Set.TButton", width=btnwidth)
+        self.setButton.bind("<Button-1>", self.set_cb)
         self.setButton.grid(row=1, column=1, columnspan=2, sticky=fillcell, pady=btnpad, padx=btnpad)
 
     def tl_left_cb(self, event):
@@ -213,6 +214,33 @@ class CalibrationTool(tk.Frame):
         self.parent.microscope.samp = 0
         self.parent.microscope.mcoords()
         self.parent.messagearea.setText("SET now changes BR coordinates.")
+
+    def set_cb(self, event):
+        m = self.parent.microscope.get_machine_position()
+        config = self.parent.config
+        if not self.corner:
+            self.parent.messagearea.setText("You must first select a corner")
+        elif self.corner.isdigit():
+            #TODO: figure out what this math is doing and maybe move to microscope?
+            tmp_samp_coord = config.samp_coord
+            tmp_samp_coord[(int(self.corner))][0] = (m[0]-config.tl[0])/(config.tr[0]-config.tl[0])
+            tmp_samp_coord[(int(self.corner))][1] = (m[1]-config.tl[1])/(config.bl[1]-config.tl[1])
+            self.parent.config.samp_coord = tmp_samp_coord
+            print('new sample '+self.corner+' coordinates: '+str(config.samp_coord[(int(self.corner))]))
+            self.parent.messagearea.setText(self.parent.config.get_sample_id(int(corner))+" coordinates saved")
+        else:
+            if self.corner == "TL":
+                self.parent.config.tl = m
+            elif self.corner == "TR":
+                self.parent.config.tr = m
+            elif self.corner == "BL":
+                self.parent.config.bl = m
+            elif self.corner == "BR":
+                self.parent.config.br = m
+            print('new', self.corner, m)
+            self.parent.messagearea.setText(self.corner + " coordinates saved")
+        
+        self.corner = None
 
     """
     Configures rows to resize appropriately when using Grid Manager
