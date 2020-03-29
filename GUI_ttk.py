@@ -338,10 +338,7 @@ class HardwareControls(tk.Frame):
             print("stopping the run")
             self.parent.microscope.stopit = True
         else:
-            print('moving back to the origin and closing the graphical user interface')
-            self.parent.microscope.s.write(('$H \n').encode('utf-8')) # tell grbl to find zero 
-            self.parent.microscope.grbl_response() # Wait for grbl response with carriage return
-            self.parent.parent.quit()
+            self.parent.close()
 
     def light1_cb(self, event):
         self.parent.microscope.toggle_light1()
@@ -888,6 +885,7 @@ class GUI(tk.Frame):
         self.configureRows(5)
         self.configureColumns(1)
         self.parent = parent
+        self.parent.protocol("WM_DELETE_WINDOW", self.close)
 
         # Set up initial configuration
         self.config = None
@@ -940,6 +938,22 @@ class GUI(tk.Frame):
             Config.print_help()
             if fname=='AMi.config': sys.exit() #TODO: what does this do?
 
+    """
+    callback function to close window
+    """
+    def close(self):
+        print('moving back to the origin and closing the graphical user interface')
+        self.microscope.s.write(('$H \n').encode('utf-8')) # tell grbl to find zero 
+        self.microscope.grbl_response() # Wait for grbl response with carriage return
+        if self.microscope.light1_stat:
+            self.microscope.toggle_light1()
+        if self.microscope.light2_stat:
+            self.microscope.toggle_light2()
+        self.microscope.s.close()
+        if self.microscope.viewing:
+            self.microscope.switch_camera_preview()
+        self.parent.destroy()
+
 def main():
     print('\n Bonjour, ami \n')
     if not os.path.isdir("images"): # check to be sure images directory exists
@@ -973,7 +987,7 @@ def main():
                                        0))
     root.mainloop()
 
-    # Exit procedures
+    # After close
     print('\n Hope you find what you\'re looking for!  \n')
 
 if __name__ == "__main__":
