@@ -130,9 +130,8 @@ class Config():
 
     """
     Get the sub-sample letter id given sub-sample index
-    TODO: rename to get_subsample_id
     """
-    def get_sample_id(self, samp):
+    def get_subsample_id(self, samp):
         return self.Lalphabet[samp]
 
     """
@@ -143,3 +142,9 @@ class Config():
             return self.Ualphabet.find(letter)
         else:
             return self.Lalphabet.find(letter)
+
+    """
+    Get the sample name given row and column
+    """
+    def get_sample_name(self, row, col):
+        return self.alphabet[row] + str(col + 1)

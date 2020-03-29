@@ -42,6 +42,8 @@ class Microscope():
     wx          : CNC Work position (x)
     wy          : CNC Work position (y)
     wz          : CNC Work position (z)
+    fracbelow   : this is the fraction of zrange below the expected plane of focus
+    camera_delay: delay, in seconds, that the system should sit idle before each image
     """
     def __init__(self):
         self.xcol = 0
@@ -53,6 +55,8 @@ class Microscope():
         self.viewing = False
         self.running = False
         self.stopit = False
+        self.fracbelow = 0.5
+        self.camera_delay = 0.2
 
         # Camera setup
         self.camera = PiCamera()
@@ -135,6 +139,16 @@ class Microscope():
             return "<Idle,MPos:0.000,0.000,0.000,WPos:0.000,0.000,0.000>\r".encode('utf-8')
         else:
             return self.s.readline()
+
+    """
+    wait for grbl to complete movement -new version wait for pin A8 to go low 
+    """
+    def wait_for_Idle(self):
+        self.s.write(('m9 \n').encode('utf-8')) # set pin A3 low
+        sleep(0.2) #wait a little just in case
+        while GPIO.input(self.arduinomvmnt):
+            sleep(0.1)
+        self.s.write(('m8 \n').encode('utf-8')) # set pin A3 high
 
     """
     Turns light1 on if it's off, off if it's on

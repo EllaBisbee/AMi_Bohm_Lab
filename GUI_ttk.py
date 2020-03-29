@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 import sys, os
 from dotenv import load_dotenv
+from datetime import datetime
+from time import sleep
 
 from Config import Config
 from Microscope import Microscope
@@ -187,7 +189,7 @@ class CalibrationTool(tk.Frame):
             self.parent.microscope.yrow = 0
             self.parent.microscope.mcoords()
             self.parent.messagearea.setText("SET now changes sub-sample " + 
-                                            config.get_sample_id(self.parent.microscope.samp) + 
+                                            config.get_subsample_id(self.parent.microscope.samp) + 
                                             " coordinates.")
         else:
             self.parent.messagearea.setText("no sub-samples specified.")
@@ -228,7 +230,7 @@ class CalibrationTool(tk.Frame):
             tmp_samp_coord[(int(self.corner))][1] = (m[1]-config.tl[1])/(config.bl[1]-config.tl[1])
             self.parent.config.samp_coord = tmp_samp_coord
             print('new sample '+self.corner+' coordinates: '+str(config.samp_coord[(int(self.corner))]))
-            self.parent.messagearea.setText(self.parent.config.get_sample_id(int(corner))+" coordinates saved")
+            self.parent.messagearea.setText(self.parent.config.get_subsample_id(int(corner))+" coordinates saved")
         else:
             if self.corner == "TL":
                 self.parent.config.tl = m
@@ -532,6 +534,8 @@ class ImagingControls(tk.Frame):
         style.configure('Img-Run.ActvGreen.TButton', font="Helvetia 12 bold", foreground="yellow", background="black")
 
         self.snapButton = ttk.Button(self, text="SNAP IMAGE", style="Img-Snp.ActvGreen.TButton")
+        self.snapButton.bind("<Button-1>", self.snap_cb)
+        self.snapButton.bind("<Button-3>", self.snap_right_cb)
         self.snapButton.grid(sticky=fillcell, pady=(0,5))
 
         self.runButton = ttk.Button(self, text="RUN", style="Img-Run.ActvGreen.TButton")
@@ -550,6 +554,96 @@ class ImagingControls(tk.Frame):
     def configureColumns(self, numcols):
         for i in range(numcols):
             tk.Grid.columnconfigure(self, i, weight=1)
+
+    """
+    Get the current date as a nice string
+    """
+    def tdate(self):
+        return datetime.now().strftime('%h-%d-%Y_%I:%M%p').replace(" ","")
+
+    """
+    Get the sample name
+    """
+    def _get_samp_name(self):
+        yrow = self.parent.microscope.yrow
+        xcol = self.parent.microscope.xcol
+        return self.parent.config.get_sample_name(yrow, xcol)
+
+    """
+    Ensure all directories and subdirectories exist for images
+    Returns the innermost directory
+    """
+    def _initialize_directories(self):
+        sID = self.parent.config.sID
+        nroot = self.parent.config.nroot
+        path1 = 'images/' + sID
+        if not os.path.isdir(path1):
+            os.mkdir(path1)
+            print('created directory {} within the images directory'.format(sID))
+        path1 += '/' + nroot
+        if not os.path.isdir(path1):
+            os.mkdir(path1)
+            print('created directory {} within the images/{} directory'.format(nroot, sID))
+        path1 += '/snaps'
+        if not os.path.isdir(path1):
+            os.mkdir(path1)
+            print('created directory \'snaps\' within the images/{}/{} directory'.format(sID, nroot))
+        return path1
+
+    """
+    Takes a simple snapshot of the current view
+    """
+    def snap_cb(self, event):
+        # config.sID = str(sIDe.get()) TODO: get rid of this, maybe add listeners for when entries in config are changed to update the config object??
+        # config.nroot = str(IDe.get()) TODO: get rid of this
+        path1 = self._initialize_directories()
+        if self.parent.config.samps == 1: 
+            # TODO: is there a better way to write this using functions in other modules?
+            sname = 'images/' + self.parent.config.sID + '/' + self.parent.config.nroot + '/snaps/' + self.parent.config.alphabet[self.parent.microscope.yrow]+str(self.parent.microscope.xcol+1)+"_"+self.tdate()+'.jpg'
+        else:
+            sname = 'images/' + self.parent.config.sID + '/' + self.parent.config.nroot + '/snaps/' + self.parent.config.alphabet[self.parent.microscope.yrow]+str(self.parent.microscope.xcol+1)+self.parent.config.get_subsample_id(self.parent.microscope.samp)+"_"+self.tdate()+'.jpg'
+        self.parent.microscope.camera.capture(sname)
+        self.parent.messagearea.setText("image saved to {}".format(sname))
+
+    """
+    right mouse snap - takes a series of z-stacked pictures using nimages and Z-spacing parameters
+    """
+    def snap_right_cb(self, event):
+        #config.sID = str(sIDe.get()) TODO: get rid of these
+        #config.nroot = str(IDe.get())
+        #config.nimages = int(nimge.get())
+        #config.zstep = float(zspe.get())
+        # TODO: move image taking to microscope?
+        samp_name = self._get_samp_name()
+        if self.parent.config.samps > 1:
+            samp_name += self.parent.config.get_subsample_id(self.parent.microscope.samp)
+        path1 = self._initialize_directories()
+        processf = open(path1 + '/' + samp_name + '_process_snap.com','w')
+        processf.write('rm OUT*.tif \n')
+        zrange = (self.parent.config.nimages-1)*self.parent.config.zstep
+        z = self.parent.microscope.mz-(1-self.parent.microscope.fracbelow)*zrange # bottom of the zrange (this is the top of the sample!)
+        z_sav = self.parent.microscope.mz
+        processf.write('echo \'processing: '+samp_name+'\' \n')
+        samp_name += '_' + self.tdate()
+        line = 'align_image_stack -m -a OUT '
+        for imgnum in range(self.parent.config.nimages):
+            self.parent.microscope.s.write(('G0 z '+ str(z) + '\n').encode('utf-8')) # move to z
+            self.parent.microscope.grbl_response()
+            self.parent.microscope.wait_for_Idle()
+            imgname = path1 + '/' + samp_name + '_' + str(imgnum) + '.jpg'
+            sleep(self.parent.microscope.camera_delay)#slow things down to allow camera to settle down
+            self.parent.microscope.camera.capture(imgname)
+            line += samp_name + '_' + str(imgnum) + '.jpg '
+            z += self.parent.config.zstep
+        line += (' \n') 
+        processf.write(line)
+        processf.write('enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 --hard-mask --output='+samp_name+'.tif OUT*.tif \n')
+        processf.write('rm OUT*.tif \n')
+        processf.close()
+        self.parent.microscope.s.write(('G0 z '+ str(z_sav) + '\n').encode('utf-8')) # return to original z 
+        self.parent.microscope.grbl_response()
+        self.parent.microscope.wait_for_Idle()
+        self.parent.messagearea.setText("individual images:" + path1 + "\n" + 'source '+samp_name+'_process_snap.com to combine z-stack')
 
 class MovementAndImaging(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
