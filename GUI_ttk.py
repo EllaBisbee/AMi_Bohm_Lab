@@ -275,6 +275,7 @@ class HardwareControls(tk.Frame):
 
         self.resetButton = ttk.Button(self, text="reset origin")
         self.resetButton.bind("<Button-1>", self.reset_cb)
+        self.resetButton.bind("<Button-3>", self.reset_right_cb)
         self.resetButton.grid(row=1, column=0, sticky=fillcell, pady=btnpad, padx=btnpad)
         
         self.closeButton = ttk.Button(self, text="stop/close")
@@ -314,6 +315,14 @@ class HardwareControls(tk.Frame):
         self.parent.microscope.s.write(('$H \n').encode('utf-8')) # Send g-code home command to grbl
         self.parent.microscope.grbl_response() # Wait for grbl response with carriage return
         self.parent.messagearea.setText("Ready to rumble!")
+
+    def reset_right_cb(self, event):
+        self.parent.calibrationtool.corner = None
+        print("clicked reset alarm")
+        self.parent.messagearea.setText("$X sent to GRBL...")
+        self.parent.microscope.s.write(('$X \n').encode('utf-8')) # Send g-code home command to grbl
+        self.parent.microscope.grbl_response() # Wait for grbl response with carriage return
+        self.parent.messagearea.setText("It might work now...")
             
 class CalibrationAndHardware(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
