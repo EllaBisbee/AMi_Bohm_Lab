@@ -44,6 +44,7 @@ class Microscope():
     wz          : CNC Work position (z)
     fracbelow   : this is the fraction of zrange below the expected plane of focus
     camera_delay: delay, in seconds, that the system should sit idle before each image
+    disable_hard_limits : this disables hard limits RUN only
     """
     def __init__(self):
         self.xcol = 0
@@ -57,6 +58,7 @@ class Microscope():
         self.stopit = False
         self.fracbelow = 0.5
         self.camera_delay = 0.2
+        self.disable_hard_limits = True
 
         # Camera setup
         self.camera = PiCamera()

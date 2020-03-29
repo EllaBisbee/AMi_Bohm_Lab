@@ -4,6 +4,7 @@ import sys, os
 from dotenv import load_dotenv
 from datetime import datetime
 from time import sleep
+from shutil import copyfile
 
 from Config import Config
 from Microscope import Microscope
@@ -539,6 +540,7 @@ class ImagingControls(tk.Frame):
         self.snapButton.grid(sticky=fillcell, pady=(0,5))
 
         self.runButton = ttk.Button(self, text="RUN", style="Img-Run.ActvGreen.TButton")
+        self.runButton.bind("<Button-1>", self.run_cb)
         self.runButton.grid(sticky=fillcell, pady=(5,0))
     
     """
@@ -567,13 +569,16 @@ class ImagingControls(tk.Frame):
     def _get_samp_name(self):
         yrow = self.parent.microscope.yrow
         xcol = self.parent.microscope.xcol
-        return self.parent.config.get_sample_name(yrow, xcol)
+        samp_name = self.parent.config.get_sample_name(yrow, xcol)
+        if self.parent.config.samps > 1:
+            samp_name += self.parent.config.get_subsample_id(self.parent.microscope.samp)
+        return samp_name
 
     """
     Ensure all directories and subdirectories exist for images
     Returns the innermost directory
     """
-    def _initialize_directories(self):
+    def _initialize_directories(self, snap=True):
         sID = self.parent.config.sID
         nroot = self.parent.config.nroot
         path1 = 'images/' + sID
@@ -584,10 +589,17 @@ class ImagingControls(tk.Frame):
         if not os.path.isdir(path1):
             os.mkdir(path1)
             print('created directory {} within the images/{} directory'.format(nroot, sID))
-        path1 += '/snaps'
-        if not os.path.isdir(path1):
-            os.mkdir(path1)
-            print('created directory \'snaps\' within the images/{}/{} directory'.format(sID, nroot))
+        
+        if snap:
+            path1 += '/snaps'
+            if not os.path.isdir(path1):
+                os.mkdir(path1)
+                print('created directory \'snaps\' within the images/{}/{} directory'.format(sID, nroot))
+        else:
+            path1 += '/' + self.tdate()
+            if not os.path.isdir(path1):
+                os.mkdir(path1)
+                print('created directory: {}'.format(path1))
         return path1
 
     """
@@ -615,8 +627,6 @@ class ImagingControls(tk.Frame):
         #config.zstep = float(zspe.get())
         # TODO: move image taking to microscope?
         samp_name = self._get_samp_name()
-        if self.parent.config.samps > 1:
-            samp_name += self.parent.config.get_subsample_id(self.parent.microscope.samp)
         path1 = self._initialize_directories()
         processf = open(path1 + '/' + samp_name + '_process_snap.com','w')
         processf.write('rm OUT*.tif \n')
@@ -644,6 +654,68 @@ class ImagingControls(tk.Frame):
         self.parent.microscope.grbl_response()
         self.parent.microscope.wait_for_Idle()
         self.parent.messagearea.setText("individual images:" + path1 + "\n" + 'source '+samp_name+'_process_snap.com to combine z-stack')
+    
+    def run_cb(self, event):
+        self.parent.configurationtool.update_config() # get data from the GUI window and save/update the configuration file... 
+        self.parent.microscope.yrow = 0
+        self.parent.microscope.xcol = 0
+        self.parent.microscope.samp = 0
+        self.parent.microscope.mcoords() #go to A1 
+        imgpath = self._initialize_directories(snap=False)
+        if not os.path.isdir(imgpath+'/rawimages'):
+            os.mkdir(imgpath+'/rawimages')
+            print('created directory: '+imgpath+'/rawimages')
+            copyfile(self.parent.config.fname,(imgpath + '/' + self.parent.config.fname))
+        if not self.parent.microscope.viewing:
+            self.parent.microscope.switch_camera_preview()
+            sleep(2) # let camera adapt to the light before collecting images
+        processf = open(imgpath+'/process'+self.parent.config.nroot+'.com','w')
+        processf.write('rm OUT*.tif \n')
+        zrange=(self.parent.config.nimages-1)*self.parent.config.zstep
+        self.parent.microscope.running=True
+        self.parent.messagearea.setText("imaging samples...")
+        if self.parent.microscope.disable_hard_limits: 
+            self.parent.microscope.s.write(('$21=0 \n').encode('utf-8')) #turn off hard limits
+            print('hard limits disabled')
+        for yrow in range(self.parent.config.ny):
+            for xcol in range(self.parent.config.nx):
+                for samp in range(self.parent.config.samps):
+                    self.parent.microscope.mcoords() # go to the expected position of the focussed sample 
+                    z = self.parent.microscope.mz-(1-self.parent.microscope.fracbelow)*zrange # bottom of the zrange (this is the top of the sample!)
+                    samp_name = self._get_samp_name()
+                    processf.write('echo \'processing: '+samp_name+'\' \n')
+                    line='align_image_stack -m -a OUT '
+                    # TODO: i think this is reused in snap function
+                    for imgnum in range(self.parent.config.nimages):
+                        self.parent.microscope.s.write(('G0 z '+ str(z) + '\n').encode('utf-8')) # move to z
+                        self.parent.microscope.grbl_response()
+                        self.parent.microscope.wait_for_Idle()
+                        sleep(0.2)
+                        # take image
+                        imgname = imgpath+'/rawimages/'+samp_name+'_'+str(imgnum)+'.jpg'
+                        sleep(self.parent.microscope.camera_delay)#slow things down to allow camera to settle down
+                        self.parent.microscope.camera.capture(imgname)
+                        line+='rawimages/'+samp_name+'_'+str(imgnum)+'.jpg '
+                        z+=self.parent.config.zstep
+                    line+=(' \n') 
+                    processf.write(line)
+                    processf.write('enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 --hard-mask --output='+samp_name+'.tif OUT*.tif \n')
+                    processf.write('rm OUT*.tif \n')
+                    if self.parent.microscope.stopit: 
+                        break
+                if self.parent.microscope.stopit: 
+                    break
+            if self.parent.microscope.stopit: 
+                break
+        self.parent.microscope.running = False
+        processf.close()
+        self.parent.microscope.switch_camera_preview() # turn off the preview so the monitor can go black when the pi sleeps
+        self.parent.microscope.toggle_light1() #turn off light1
+        self.parent.microscope.toggle_light2_arduino() #turn off light2
+        if self.parent.microscope.disable_hard_limits: 
+           self.parent.microscope.s.write(('$21=1 \n').encode('utf-8')) # turn hard limits back on
+           print('hard limits enabled')
+        self.parent.microscope.stopit = False
 
 class MovementAndImaging(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -746,10 +818,13 @@ class ConfigurationTool(tk.Frame):
         for i in range(numcols):
             tk.Grid.columnconfigure(self, i, weight=1)
 
+    def updatebtn_cb(self, event):
+        self.update_config()
+
     """
     Callback function for update buttom
     """
-    def updatebtn_cb(self, event):
+    def update_config(self):
         if not self.parent.config:
             self.messagearea.setText("There is not existing configuration to update. Nothing written")
             return
