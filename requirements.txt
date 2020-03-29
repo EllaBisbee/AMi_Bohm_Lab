@@ -1,5 +1,6 @@
 pyserial
 numpy
+python-dotenv
 
 # Raspberry Pi Requirements (Do not install locally)
 #picamera

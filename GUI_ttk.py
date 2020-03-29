@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import sys, os
+from dotenv import load_dotenv
 
 from Config import Config
 from Microscope import Microscope
@@ -269,9 +270,11 @@ class HardwareControls(tk.Frame):
         style.configure('LiveView.TButton', font="Helvetia 12 bold", foreground="black", background="orange")
         style.map('LiveView.TButton', background=[('active', 'green'), ('pressed', 'green')])
         self.viewButton = ttk.Button(self, text="VIEW", style="LiveView.TButton")
+        self.viewButton.bind("<Button-1>", self.view_cb)
         self.viewButton.grid(columnspan=2, sticky=fillcell, pady=btnpad, padx=btnpad)
 
         self.resetButton = ttk.Button(self, text="reset origin")
+        self.resetButton.bind("<Button-1>", self.reset_cb)
         self.resetButton.grid(row=1, column=0, sticky=fillcell, pady=btnpad, padx=btnpad)
         
         self.closeButton = ttk.Button(self, text="stop/close")
@@ -297,6 +300,21 @@ class HardwareControls(tk.Frame):
         for i in range(numcols):
             tk.Grid.columnconfigure(self, i, weight=1)
 
+    def view_cb(self, event):
+        if not self.parent.microscope.running:
+            self.parent.microscope.switch_camera_preview()
+            self.parent.messagearea.setText("click VIEW to open/close live view")
+
+    def reset_cb(self, event):
+        self.parent.calibrationtool.corner = None
+        print("clicked origin reset")
+        self.parent.messagearea.setText("wait while machine resets...")
+        self.parent.microscope.s.write(('$X \n').encode('utf-8')) # Send g-code home command to grbl
+        self.parent.microscope.grbl_response() # Wait for grbl response with carriage return
+        self.parent.microscope.s.write(('$H \n').encode('utf-8')) # Send g-code home command to grbl
+        self.parent.microscope.grbl_response() # Wait for grbl response with carriage return
+        self.parent.messagearea.setText("Ready to rumble!")
+            
 class CalibrationAndHardware(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
@@ -633,6 +651,9 @@ def main():
              'You need to create the directory or fix the link before continuing. \n' +
              'i.e. mkdir images')
         sys.exit()
+
+    # load environment variables
+    load_dotenv()
 
     # Set up GUI Window
     windowwidth = 320
