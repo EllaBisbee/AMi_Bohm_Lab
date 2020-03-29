@@ -402,6 +402,8 @@ class MovementTool(tk.Frame):
         self.pose.grid(row=0, column=1, sticky=fillcell, pady=pady, padx=padx)
 
         self.prevButton = ttk.Button(self, text="prev", style="Movement.TButton", width=width)
+        self.prevButton.bind("<Button-1>", self.prev_left_cb)
+        self.prevButton.bind("<Button-3>", self.prev_right_cb)
         self.prevButton.grid(row=1, column=0, sticky=fillcell, pady=pady, padx=padx)
 
         self.nextButton = ttk.Button(self, text="next", style="Movement.TButton", width=width)
@@ -460,6 +462,31 @@ class MovementTool(tk.Frame):
                 self.parent.microscope.mcoords()
             else:
                 self.parent.messagearea.setText("input error")
+
+    def prev_left_cb(self, event):
+        self.corner = None
+        self.parent.messagearea.setText("")
+        if self.parent.microscope.samp > 0:
+            self.parent.microscope.samp -= 1
+            self.parent.microscope.mcoords()
+        elif self.parent.microscope.xcol > 0:
+            self.parent.microscope.xcol -= 1
+            self.parent.microscope.samp = self.parent.config.samps - 1
+            self.parent.microscope.mcoords()
+        elif self.parent.microscope.yrow > 0:
+            self.parent.microscope.yrow -= 1
+            self.parent.microscope.xcol = self.parent.config.nx - 1
+            self.parent.microscope.samp = self.parent.config.samps-1
+            self.parent.microscope.mcoords()
+        else:
+            self.parent.messagearea.setText("cannot reverse beyond the first sample")
+
+    def prev_right_cb(self, event):
+        self.parent.messagearea.setText("")
+        self.parent.microscope.yrow -= 1
+        if self.parent.microscope.yrow == -1: 
+            self.parent.microscope.yrow = self.parent.config.ny - 1
+        self.parent.microscope.mcoords()
 
 class ImagingControls(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
