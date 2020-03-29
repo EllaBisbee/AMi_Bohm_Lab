@@ -394,6 +394,7 @@ class MovementTool(tk.Frame):
         style.map('Movement.TButton', background=[('active', 'green'), ('pressed', 'green')])
 
         self.gotoButton = ttk.Button(self, text="go to", style="Movement.TButton", width=width)
+        self.gotoButton.bind("<Button-1>", self.goto_cb)
         self.gotoButton.grid(row=0, column=0, sticky=fillcell, pady=pady, padx=padx)
 
         self.pose = ttk.Entry(self, width=width)
@@ -419,6 +420,46 @@ class MovementTool(tk.Frame):
     def configureColumns(self, numcols):
         for i in range(numcols):
             tk.Grid.columnconfigure(self, i, weight=1)
+
+    def goto_cb(self, event):
+        ### config.samps = int(sampse.get()) TODO: remove
+        self.corner = None
+        pose_txt = str(self.pose.get())
+        pose_txt = pose_txt.replace(" ", "") #get rid of spaces
+        pose_txt = pose_txt.rstrip("\r\n") # get rid of carraige return
+        self.parent.microscope.samp = 0
+        major_well = pose_txt
+
+        # first deal with the sub-sample character if present
+        if not pose_txt[-1].isdigit(): # sub-sample is specified
+            # TODO: add error checking for subsample within samps
+            self.parent.microscope.samp = self.parent.config.get_subsample_index(pose_txt[-1])
+            major_well = pose_txt[0:-1] # get major well letter id
+        
+        # now see if it is in number format
+        if major_well[0].isdigit(): 
+            numb = int(major_well) 
+            numb -= 1
+            if numb < self.parent.config.nx * self.parent.config.ny and numb >= 0:
+                # TODO: add functions in config to calculate this stuff (row/col)
+                self.parent.microscope.yrow = int(numb / self.parent.config.nx)
+                self.parent.microscope.xcol = numb - (self.parent.microscope.yrow * self.parent.config.nx)
+                print('yrow,xcol',self.parent.microscope.yrow, self.parent.microscope.xcol)
+                self.parent.microscope.mcoords()
+            else:
+                self.parent.messagearea.setText("input error")
+        else: # assume it is letter then number format
+            rowletter = major_well[0]
+            colnum = int(major_well[1:])
+            if ((rowletter in self.parent.config.alphabet) and (colnum <= self.parent.config.nx)): 
+                self.parent.microscope.yrow = self.parent.config.alphabet.index(rowletter) 
+                # TODO: also add functions in config/micro to do this. When would it be necessary to recalculate yrow
+                if self.parent.microscope.yrow > (self.parent.config.ny-1): 
+                    self.parent.microscope.yrow = self.parent.microscope.yrow - self.parent.config.ny
+                self.parent.microscope.xcol = colnum - 1
+                self.parent.microscope.mcoords()
+            else:
+                self.parent.messagearea.setText("input error")
 
 class ImagingControls(tk.Frame):
     def __init__(self, parent, *args, **kwargs):

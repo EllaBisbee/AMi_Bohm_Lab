@@ -128,5 +128,18 @@ class Config():
         except:
             raise Exception("invalid file format")
 
+    """
+    Get the sub-sample letter id given sub-sample index
+    TODO: rename to get_subsample_id
+    """
     def get_sample_id(self, samp):
         return self.Lalphabet[samp]
+
+    """
+    Get the sub-sample index given the sub-sample letter
+    """
+    def get_subsample_index(self, letter):
+        if letter in self.Ualphabet[0:self.samps]:
+            return self.Ualphabet.find(letter)
+        else:
+            return self.Lalphabet.find(letter)
