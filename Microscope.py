@@ -31,7 +31,9 @@ class Microscope():
     stopit      : Trigger to cancel collection of images
     camera      : TODO: description for this
     light1      : GPIO channel for Light 1
+    light1_stat : On/Off state of light 1
     light2      : GPIO channel for Light 2
+    light2_stat : On/Off state of light 2
     arduinopwr  : GPIO channel for arduino power
     arduinomvmt : GPIP channel for arduino movement flag
     s           : TODO: description for this, serial port control?
@@ -59,7 +61,9 @@ class Microscope():
 
         # GPIO Controls
         self.light1 = 17
+        self.light1_stat = False
         self.light2 = 18
+        self.light2_stat = False
         self.arduinopwr = 18
         self.arduinomvmnt = 27
         GPIO.setmode(GPIO.BCM)
@@ -131,6 +135,36 @@ class Microscope():
             return "<Idle,MPos:0.000,0.000,0.000,WPos:0.000,0.000,0.000>\r".encode('utf-8')
         else:
             return self.s.readline()
+
+    """
+    Turns light1 on if it's off, off if it's on
+    """
+    def toggle_light1(self):
+        if self.light1_stat:
+            GPIO.output(self.light1, GPIO.LOW)
+            self.light1_stat = False
+            print("light1 turned off")
+        else:
+            GPIO.output(self.light1, GPIO.HIGH)
+            self.light1_stat = True
+            print("light1 turned on")
+
+    """
+    Turns light2 and arduino on if it's off, off if it's on
+    """
+    def toggle_light2_arduino(self):
+        if self.light2_stat:
+            GPIO.output(self.light2, GPIO.LOW)
+            self.light2_stat = False
+            self.s.write(('m5 \n').encode('utf-8')) # turn off the spindle power
+            self.grbl_response() # Wait for grbl response with carriage return
+            print("light2 turned off")
+        else:
+            GPIO.output(self.light2, GPIO.HIGH)
+            self.light2_stat = True
+            self.s.write(('m3 \n').encode('utf-8')) #turn on spindle power
+            self.grbl_response() # Wait for grbl response with carriage return
+            print("light2 turned on")
 
     def mcoords(self):
         print("Moving to cell")

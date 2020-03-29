@@ -283,9 +283,11 @@ class HardwareControls(tk.Frame):
         self.closeButton.grid(row=1, column=1, sticky=fillcell, pady=btnpad, padx=btnpad)
 
         self.light1Button = ttk.Button(self, text="light1")
+        self.light1Button.bind("<Button-1>", self.light1_cb)
         self.light1Button.grid(row=2, column=0, sticky=fillcell, pady=btnpad, padx=btnpad)
 
         self.light2Button = ttk.Button(self, text="light2")
+        self.light2Button.bind("<Button-1>", self.light2_cb)
         self.light2Button.grid(row=2, column=1, sticky=fillcell, pady=btnpad, padx=btnpad)
 
     """
@@ -337,6 +339,12 @@ class HardwareControls(tk.Frame):
             self.parent.microscope.s.write(('$H \n').encode('utf-8')) # tell grbl to find zero 
             self.parent.microscope.grbl_response() # Wait for grbl response with carriage return
             self.parent.parent.quit()
+
+    def light1_cb(self, event):
+        self.parent.microscope.toggle_light1()
+
+    def light2_cb(self, event):
+        self.parent.microscope.toggle_light2_arduino()
             
 class CalibrationAndHardware(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
