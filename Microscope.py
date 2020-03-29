@@ -27,7 +27,8 @@ class Microscope():
     my          : Machine position (y)
     mz          : Machine position (z)
     viewing     : Live preview of machine camera
-    running     : TODO: what is this?
+    running     : Program is collecting images
+    stopit      : Trigger to cancel collection of images
     camera      : TODO: description for this
     light1      : GPIO channel for Light 1
     light2      : GPIO channel for Light 2
@@ -49,6 +50,7 @@ class Microscope():
         self.mz = 0
         self.viewing = False
         self.running = False
+        self.stopit = False
 
         # Camera setup
         self.camera = PiCamera()
@@ -123,6 +125,8 @@ class Microscope():
     """
     def grbl_response(self):
         if self.in_dev_machine:
+            # "wait" for response
+            sleep(1)
             # respond as if "?" had been requested
             return "<Idle,MPos:0.000,0.000,0.000,WPos:0.000,0.000,0.000>\r".encode('utf-8')
         else:

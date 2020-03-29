@@ -279,6 +279,7 @@ class HardwareControls(tk.Frame):
         self.resetButton.grid(row=1, column=0, sticky=fillcell, pady=btnpad, padx=btnpad)
         
         self.closeButton = ttk.Button(self, text="stop/close")
+        self.closeButton.bind("<Button-1>", self.close_cb)
         self.closeButton.grid(row=1, column=1, sticky=fillcell, pady=btnpad, padx=btnpad)
 
         self.light1Button = ttk.Button(self, text="light1")
@@ -323,6 +324,19 @@ class HardwareControls(tk.Frame):
         self.parent.microscope.s.write(('$X \n').encode('utf-8')) # Send g-code home command to grbl
         self.parent.microscope.grbl_response() # Wait for grbl response with carriage return
         self.parent.messagearea.setText("It might work now...")
+
+    """
+    Closes the interface if not collecting images. Stops the run if you are collecting data.
+    """
+    def close_cb(self, event):
+        if self.parent.microscope.running:
+            print("stopping the run")
+            self.parent.microscope.stopit = True
+        else:
+            print('moving back to the origin and closing the graphical user interface')
+            self.parent.microscope.s.write(('$H \n').encode('utf-8')) # tell grbl to find zero 
+            self.parent.microscope.grbl_response() # Wait for grbl response with carriage return
+            self.parent.parent.quit()
             
 class CalibrationAndHardware(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
