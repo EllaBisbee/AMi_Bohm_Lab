@@ -965,6 +965,12 @@ def main():
     frame = GUI(root, background="white")
     frame.pack(side="top", fill="both", expand=True)
     frame.messagearea.setText("The corner samples must be centered and in focus before imaging. Use blue buttons to check alignment, and XYZ windows to make corrections. Good luck!!")
+
+    root.update()
+    root.geometry("{}x{}+{}+{}".format(root.winfo_width(), 
+                                       root.winfo_height(), 
+                                       root.winfo_screenwidth() - root.winfo_width(),
+                                       0))
     root.mainloop()
 
     # Exit procedures
