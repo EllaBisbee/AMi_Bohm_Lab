@@ -16,16 +16,20 @@ class Microscope():
 
     Parameters
     ----------
-    
+    config      : configuration object
 
     Attributes
     ----------
+    config      : configuration object
     xcol        : Sample position (x)
     yrow        : Sample position (y)
     samp        : Sub-sample index (used when there is more than one sample in each well)
     mx          : Machine position (x)
     my          : Machine position (y)
     mz          : Machine position (z)
+    xmax        : translation limit (x) in mm
+    ymax        : translation limit (y) in mm
+    zmax        : translation limit (z) in mm
     viewing     : Live preview of machine camera
     running     : Program is collecting images
     stopit      : Trigger to cancel collection of images
@@ -46,19 +50,24 @@ class Microscope():
     camera_delay: delay, in seconds, that the system should sit idle before each image
     disable_hard_limits : this disables hard limits RUN only
     """
-    def __init__(self):
+    def __init__(self, config):
         self.xcol = 0
         self.yrow = 0
         self.samp = 0
         self.mx = 0
         self.my = 0
         self.mz = 0
+        self.xmax = 160.
+        self.ymax = 118.
+        self.zmax = 29.3
         self.viewing = False
         self.running = False
         self.stopit = False
         self.fracbelow = 0.5
         self.camera_delay = 0.2
         self.disable_hard_limits = True
+        # TODO: Maybe config could live inside microscope and GUI could pull config from here?
+        self.config = config
 
         # Camera setup
         self.camera = PiCamera()
@@ -183,4 +192,24 @@ class Microscope():
             print("light2 turned on")
 
     def mcoords(self):
-        print("Moving to cell")
+        print("called mcoords with yrow,xcol,samp:",self.yrow,self.xcol,self.samp)
+        self.wait_for_Idle()
+        x = self.xcol / float(self.config.nx - 1) + self.config.samp_coord[self.samp][0]
+        y = self.yrow / float(self.config.ny - 1) + self.config.samp_coord[self.samp][1]
+        self.mx = self.config.br[0] * x * y + self.config.bl[0] * (1.-x) * y + self.config.tr[0] * x * (1.-y) + self.config.tl[0] * (1.-x) * (1.-y)
+        self.my = self.config.br[1] * x * y + self.config.bl[1] * (1.-x) * y + self.config.tr[1] * x * (1.-y) + self.config.tl[1] * (1.-x) * (1.-y)
+        self.mz = self.config.br[2] * x * y + self.config.bl[2] * (1.-x) * y + self.config.tr[2] * x * (1.-y) + self.config.tl[2] * (1.-x) * (1.-y)
+        print('mx,my,mz',self.mx,self.my,self.mz)
+        self.s.write(('G0 x '+str(self.mx)+' y '+str(self.my)+' z '+ str(self.mz) + ' \n').encode('utf-8')) # g-code to grbl
+        sleep(0.2)
+        self.grbl_response() # Wait for grbl response with carriage return
+        letnum = self.config.get_sample_name(self.yrow, self.xcol)
+        if self.config.samps > 1:
+            letnum += self.config.get_subsample_id(self.samp)
+        #pose.delete(0,tk.END); pose.insert(0,letnum) TODO: figure out how to put this back in
+        self.wait_for_Idle()
+        """
+        canvas.create_rectangle(2,2,318,60,fill='white')
+        canvas.create_text(160,20,text=("showing "+letnum+'  position '+str(yrow*config.nx+xcol+1)),font="helvetica 11")
+        canvas.create_text(160,39,text=('machine coordinates:  '+str(round(mx,3))+',  '+str(round(my,3))+',  '+str(round(mz,3))),font="helvetica 9",fill="grey")
+        canvas.update()""" # TODO: figure out how to put this back in

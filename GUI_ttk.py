@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 from time import sleep
 from shutil import copyfile
+import numpy as np
 
 from Config import Config
 from Microscope import Microscope
@@ -35,12 +36,18 @@ class TranslationTool(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, pady=1, highlightthickness=0, background=parent['bg'], *args, **kwargs)
         self.parent = parent
+        self.gx = 0
+        self.gy = 0
 
         background = "lightgrey"
         self.zsetting = tk.Canvas(self, width=1, height=1, highlightthickness=0, bg=background)
+        self.zsetting.bind("<Motion>", self.motion)
+        self.zsetting.bind("<Button-1>", self.left_click_z)
         self.zsetting.pack(side=tk.LEFT)
 
         self.xysetting = tk.Canvas(self, width=1, height=1, highlightthickness=0, bg=background)
+        self.xysetting.bind("<Motion>", self.motion)
+        self.xysetting.bind("<Button-1>", self.left_click_xy)
         self.xysetting.pack(side=tk.RIGHT)
 
         self.bind("<Configure>", self.onResize)
@@ -116,6 +123,52 @@ class TranslationTool(tk.Frame):
         self.xysetting.create_text(xywidth/2,xyheight, fill=labelcolor,font=labelfont, text="-Y", anchor=tk.SW)
         self.xysetting.create_text(borderwidth,xyheight/2, fill=labelcolor,font=labelfont, text="-X", anchor=tk.SW)
         self.xysetting.create_text(xywidth - borderwidth,xyheight/2, fill=labelcolor,font=labelfont, text="+X", anchor=tk.SE)
+    
+    def motion(self, event):
+        self.gx, self.gy = event.x, event.y
+
+    def left_click_z(self, event):
+        print('left_click gx,gy,xcol,yrow',self.gx, self.gy, self.parent.microscope.xcol, self.parent.microscope.yrow)
+        midpoint = self.zsetting.winfo_height() / 2
+        rz = midpoint - self.gy
+        mzsav = self.parent.microscope.mz
+        self.parent.microscope.mz += 0.0001 * (abs(rz)**2.2) * np.sign(rz)
+        if self.parent.microscope.mz > 0. and self.parent.microscope.mz < self.parent.microscope.zmax:
+            self.parent.microscope.s.write(('G0 z'+ str(self.parent.microscope.mz) + '\n').encode('utf-8')) # Send g-code block to grbl
+            self.parent.microscope.grbl_response() # Wait for grbl response with carriage return
+            message = 'current Z: '+str(round(self.parent.microscope.mz,3))+' change: '+str(round((self.parent.microscope.mz-mzsav),3))
+            if self.parent.calibrationtool.corner:
+                self.parent.messagearea.setText(message)
+            else:
+                self.parent.messagearea.setText("")
+            print(message)
+        else:
+            self.parent.messagearea.setText("that move would take you out of bounds")
+            self.parent.microscope.mz = mzsav
+
+    def left_click_xy(self, event):
+        print('left_click gx,gy,xcol,yrow',self.gx, self.gy, self.parent.microscope.xcol, self.parent.microscope.yrow)
+        x_mid = self.xysetting.winfo_width() / 2
+        y_mid = self.xysetting.winfo_height() / 2
+        rx = self.gx - x_mid
+        ry = y_mid - self.gy
+        mxsav = self.parent.microscope.mx
+        mysav = self.parent.microscope.my
+        self.parent.microscope.mx += 0.0001*(abs(rx)**2.2)*np.sign(rx)
+        self.parent.microscope.my += 0.0001*(abs(ry)**2.2)*np.sign(ry)
+        if self.parent.microscope.mx > 0. and self.parent.microscope.my > 0. and self.parent.microscope.mx < self.parent.microscope.xmax and self.parent.microscope.my < self.parent.microscope.ymax:
+            self.parent.microscope.s.write(('G0 x'+ str(self.parent.microscope.mx) + ' y ' + str(self.parent.microscope.my) +'\n').encode('utf-8')) 
+            self.parent.microscope.grbl_response() # Wait for grbl response with carriage return
+            if self.parent.calibrationtool.corner:
+               self.parent.messagearea.setText('current X,Y: {}, {}'.format(str(round(self.parent.microscope.mx,3)), str(round((self.parent.microscope.my),3))))
+            else:
+                self.parent.messagearea.setText('')
+            print('current X: {} change: {}'.format(str(round(self.parent.microscope.mx,3)),str(round((self.parent.microscope.mx-mxsav),3))))
+            print('current Y: {} change: {}'.format(str(round(self.parent.microscope.my,3)),str(round((self.parent.microscope.my-mysav),3))))
+        else:
+            self.parent.messagearea.setText("that move would take you out of bounds")
+            self.parent.microscope.mx = mxsav
+            self.parent.microscope.my = mysav
 
 class CalibrationTool(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -890,7 +943,7 @@ class GUI(tk.Frame):
         # Set up initial configuration
         self.config = None
         self.read_config()
-        self.microscope = Microscope()
+        self.microscope = Microscope(self.config)
         
         # Create GUI Areas
         self.messagearea = MessageArea(self, text="Welcome AMi!")
