@@ -1,8 +1,7 @@
-"""
-Microscope handles all aspects of external interactions with the microscope unit
+"""Controls interactions with the adapted CNC Machine.
 
-Andrew Bohm, Ella Bisbee, Ramon Fernandes
-Version 0.0.1
+This file contains the classes to control interactions with the adapted
+CNC Machine for AMi.
 """
 
 from picamera import PiCamera
@@ -11,46 +10,45 @@ import serial, pty, os
 from time import sleep
 
 class Microscope():
-    """
-    CLASS DESCRIPTION HERE
+    """Handles all external interactions with the CNC Machine.
 
-    Parameters
-    ----------
-    config      : configuration object
+    This class provides all the necessary functions to interact with the CNC
+    Machine and attached hardware.
 
-    Attributes
-    ----------
-    config      : configuration object
-    xcol        : Sample position (x)
-    yrow        : Sample position (y)
-    samp        : Sub-sample index (used when there is more than one sample in each well)
-    mx          : Machine position (x)
-    my          : Machine position (y)
-    mz          : Machine position (z)
-    xmax        : translation limit (x) in mm
-    ymax        : translation limit (y) in mm
-    zmax        : translation limit (z) in mm
-    viewing     : Live preview of machine camera
-    running     : Program is collecting images
-    stopit      : Trigger to cancel collection of images
-    camera      : TODO: description for this
-    light1      : GPIO channel for Light 1
-    light1_stat : On/Off state of light 1
-    light2      : GPIO channel for Light 2
-    light2_stat : On/Off state of light 2
-    arduinopwr  : GPIO channel for arduino power
-    arduinomvmt : GPIP channel for arduino movement flag
-    s           : TODO: description for this, serial port control?
-    _sname      : serial port name
-    _baudrate   : serial port bit rate
-    wx          : CNC Work position (x)
-    wy          : CNC Work position (y)
-    wz          : CNC Work position (z)
-    fracbelow   : this is the fraction of zrange below the expected plane of focus
-    camera_delay: delay, in seconds, that the system should sit idle before each image
-    disable_hard_limits : this disables hard limits RUN only
+    Attributes:
+        config: Configuration object for information on the tray/
+        xcol: An Integer indicating the current sample position (x)
+        yrow: An Integer indicating the current sample position (y)
+        samp: An Integer indicating the current sub-sample index within well
+        mx: An Integer indicating the current machine position (x)
+        my: An Integer indicating the current machine position (y)
+        mz: An Integer indicating the current machine position (z)
+        xmax: A Float indicating the translation limit (x) in mm
+        ymax: A Float indicating the translation limit (y) in mm
+        zmax: A Float indicating the translation limit (z) in mm
+        viewing: A Boolean indicating whether live preview is active
+        running: A Boolean indicating whether the program is collecting images
+        stopit: A Boolean that cancels the collection of images
+        camera: Camera object for interacting with the microscope camera
+        light1: An integer for the GPIO channel for Light 1
+        light1_stat: A Boolean indicating the On/Off state of light 1
+        light2: An integer for the GPIO channel for Light 2
+        light2_stat: A Boolean indicating the On/Off state of light 2
+        arduinopwr: An integer for the GPIO channel for 24V arduino power
+        arduinomvmt: An integer for the GPIO channel for arduino movement flag
+        s: Serial object for sending GRBL commands to the arduino
+        wx: A Float indicating the CNC Work position (x)
+        wy: A Float indicating the CNC Work position (y)
+        wz: A Float indicating the CNC Work position (z)
+        fracbelow: A Float indicating the fraction of zrange below the
+            expected plane of focus
+        camera_delay: A Float indicating the delay, in seconds, that the system
+            should sit idle before each image
+        disable_hard_limits: A Boolean indicating whether to disable
+            hard limits of the CNC Machine during RUN only
     """
     def __init__(self, config):
+        """Inits Microscope with given config object"""
         self.xcol = 0
         self.yrow = 0
         self.samp = 0
@@ -93,7 +91,7 @@ class Microscope():
             master, slave = pty.openpty()
             self._sname = os.ttyname(slave) # dummy name
         else:
-            self._sname = '/dev/ttyUSB0' # real name
+            self._sname = '/dev/ttyUSB0' # real name #TODO: remove from object. Local
         self._baudrate = 115200
         self.s = serial.Serial(self._sname,self._baudrate) # open grbl serial port
         self.s.write(("\r\n\r\n").encode('utf-8')) # Wake up grbl
@@ -123,9 +121,19 @@ class Microscope():
         self.grbl_response() # Wait for grbl response with carriage return
 
     def get_machine_position(self):
+        """Returns the current position of the machine as [x, y, z]
+        
+        Returns the current position of the machine as a python list
+        ordered in the usual manner --> x, y, z
+        """
         return [self.mx, self.my, self.mz]
 
     def switch_camera_preview(self):
+        """Alters the live preview state of the camera.
+
+        Changes the live preview state of the program. If live preview is on,
+        this function turns it off and vice versa.
+        """
         if self.viewing:
             self.camera.stop_preview()
             self.viewing = False
@@ -133,38 +141,53 @@ class Microscope():
             self.camera.start_preview(fullscreen=False, window=(0,-76,1597,1200)) # TODO: add dynamic window calculation
             self.viewing = True
 
-    """
-    Determines is program is running in dev mode not directly on the machine
-    """
-    def in_dev_machine(self):
+    def in_dev_machine(self): #TODO: make private
+        """Determines if program is in development
+
+        Determines if the program is running in development on a machine not
+        connected to the microscope. This is determined by environment
+        variables DEV and ONMACHINE set by the user.
+
+        Returns:
+            A boolean indicating whether this program is running in development
+        """
         return os.getenv("DEV") == "true" and os.getenv("ONMACHINE") == "false"
 
-    """
-    Waits for response from grbl with carriage return
-    """
     def grbl_response(self):
+        """Waits for a response from grbl
+
+        Waits for Grbl to respond with an OK or ERROR message. This
+        signals that Grbl has completed parsing and executing the command
+        send immediately before calling this. If the program is in dev
+        mode, this function simulates a fake response as if the "?" query
+        had been sent.
+
+        Returns: 
+            A carriage-return terminated response from grbl or a dummy
+            response if the program is in development.
+        """
         if self.in_dev_machine:
-            # "wait" for response
             sleep(1)
-            # respond as if "?" had been requested
-            return "<Idle,MPos:0.000,0.000,0.000,WPos:0.000,0.000,0.000>\r".encode('utf-8')
+            return "<Idle,MPos:0.000,0.000,0.000,WPos:0.000,0.000,0.000>".encode('utf-8')
         else:
             return self.s.readline()
 
-    """
-    wait for grbl to complete movement -new version wait for pin A8 to go low 
-    """
     def wait_for_Idle(self):
+        """Waits for Arduino to complete movement
+
+        TODO: Wait for pin A8 to go low for the new version
+        """
         self.s.write(('m9 \n').encode('utf-8')) # set pin A3 low
         sleep(0.2) #wait a little just in case
         while GPIO.input(self.arduinomvmnt):
             sleep(0.1)
         self.s.write(('m8 \n').encode('utf-8')) # set pin A3 high
 
-    """
-    Turns light1 on if it's off, off if it's on
-    """
     def toggle_light1(self):
+        """Light switch for light1
+
+        Turns light1 on/off depending on its current state
+        """
         if self.light1_stat:
             GPIO.output(self.light1, GPIO.LOW)
             self.light1_stat = False
@@ -174,10 +197,12 @@ class Microscope():
             self.light1_stat = True
             print("light1 turned on")
 
-    """
-    Turns light2 and arduino on if it's off, off if it's on
-    """
     def toggle_light2_arduino(self):
+        """Light switch for light2
+
+        Turns light2 on/off depending on its current state.
+        Also controls the 24V output of the arudino.
+        """
         if self.light2_stat:
             GPIO.output(self.light2, GPIO.LOW)
             self.light2_stat = False
@@ -192,8 +217,14 @@ class Microscope():
             print("light2 turned on")
 
     def mcoords(self):
+        """Sends a movement message to grbl to match internal settings
+
+        Calculates the desired machine location based on internal sample
+        location and sends a move signal to grbl.
+        """
         print("called mcoords with yrow,xcol,samp:",self.yrow,self.xcol,self.samp)
         self.wait_for_Idle()
+        #TODO: figure out why subtracting 1 from config.nx, and if it's correct (from Andrew)
         x = self.xcol / float(self.config.nx - 1) + self.config.samp_coord[self.samp][0]
         y = self.yrow / float(self.config.ny - 1) + self.config.samp_coord[self.samp][1]
         self.mx = self.config.br[0] * x * y + self.config.bl[0] * (1.-x) * y + self.config.tr[0] * x * (1.-y) + self.config.tl[0] * (1.-x) * (1.-y)

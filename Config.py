@@ -1,8 +1,8 @@
-"""
-Config handles all aspects of the configuration file
+"""Internal representation of the configuration file for AMi
 
-Ramon Fernandes, Ella Bisbe
-Version 0.0.2
+AMi requires external configuration by the user and this file
+contains the necessary classes and functions to control the
+handling of those files.
 """
 
 import re
@@ -10,65 +10,69 @@ import sys
 import os.path
 from os import path
 import numpy as np
+import string
 
 class Config():
-    """
-    Initializes the configuration options given a configuration file.
-    The file must be structured as so:
-        nx  ny  samps   # where these are ints as described below
-        0.0 0.0 0.0     # where these are floats for tl coords
-        0.0 0.0 0.0     # where these are floats for tr coords
-        0.0 0.0 0.0     # where these are floats for bl coords
-        0.0 0.0 0.0     # where these are floats for br coords
-        0.0 0.0         # where these are offsets for each sample (first is always 0. 0.)
-        zstep           # where this is a float as described below
-        nimages         # where this is an int as described below
-        sID             # where this is a string as described below
-        nRoot           # where this is a string as described below
+    """Manages the configuration options specified in the given file
 
-    Parameters
-    ----------
-    fname : path to configuration file
+    This class imports, maintains, and exports the configuration specified
+    in the given file. The file must be structured as so:
+        nx  ny  samps   # Integers as described in attributes
+        0.0 0.0 0.0     # Floats for for top-left x,y,z coords
+        0.0 0.0 0.0     # Floats for top-right x,y,z coords
+        0.0 0.0 0.0     # Floats for bottom-left x,y,z coords
+        0.0 0.0 0.0     # Floats for bottom-right x,y,z coords
+        0.0 0.0         # Floats for the x,y offsets of each subsample
+            Each offset must be on a new line and the first is always 0. 0.
+            The number of offsets must match 'samps' specified above
+        zstep           # Float as described in attributes
+        nimages         # Integer as described in attributes
+        sID             # String as described in attributes
+        nRoot           # String as described in attributes
 
-    Attributes
-    ----------
-    fname      : path to configuration file
-    tl         : coords of the top left drop
-    tr         : coords of the top right drop
-    bl         : coords of the bottom left drop
-    br         : coords of the bottom right drop
-    nx         : number of well positions along x
-    ny         : number of well positions along y
-    samps      : number of samples in each well
-    zstep      : image spacing in z
-    nimages    : number of images per drop
-    nroot      : plate name (no spaces)
-    sID        : sample name (no spaces)
-    alphabet   : used to keep track of labels for wells
-    Ualphabet  : Used to track main wells
-    Lalphabet  : Used to track sub-samples within each well
-    samp_coord : fractional coordinates of the individual samples
+    Attributes:
+        fname: String path to configuration file
+        tl: List of Floats indicating x,y,z coords of the top left drop
+        tr: List of Floats indicating x,y,z coords of the top right drop
+        bl: List of Floats indicating x,y,z coords of the bottom left drop
+        br: List of Floats indicating x,y,z coords of the bottom right drop
+        nx: Integer number of well positions along x
+        ny: Integer number of well positions along y
+        samps: Integer number of samples in each well
+        zstep: Float indicating z-change in image spacing between each image
+        nimages: Integer number of images per drop
+        nroot: String plate name (no spaces)
+        sID: String sample name (no spaces)
+        alphabet: used to keep track of labels for wells #TODO: better description
+        Ualphabet: Used to track main wells #TODO: convert to internal?
+        Lalphabet: Used to track sub-samples within each well #TODO: convert to internal?
+        samp_coord: fractional coordinates of the individual samples #TODO: what is this?
     """
     def __init__(self, fname):
-        if fname is None or not os.path.isfile(fname):
+        """Initializes the configuration based on given file.
+        """
+        if not os.path.isfile(fname):
             raise ValueError("invalid configuration file path.")
 
         self.fname = fname
-        self.Ualphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        self.Lalphabet = 'abcdefghijklmnopqrstuvwxyz'
+        self.Ualphabet = string.ascii_uppercase
+        self.Lalphabet = string.ascii_lowercase
         self.read()
     
-    """
-    Retrieves the next line from the given file stream.
-    Strips comments from the line and applies f to each item on the line
-    Returns a list containing the mapped items.
-
-    Parameters
-    ----------
-    file : an opened file stream
-    f    : function to apply to each item
-    """
     def _next_config(self, file, f):
+        """Retrieves and cleans the next line in the configuration file
+
+        Retrieves the next line from the given file stream.
+        Strips comments from the line and considers spaces to designate
+        different items. Applies f to each item.
+
+        Args:
+            file: an opened file stream to retrieve the next line from
+            f: function to apply to each item 
+
+        Returns:
+            A list containing each item after applying f to them
+        """
         line = file.readline()
         line_no_comments = line.split("#", 1)[0]
         items = re.findall(r'\S+', line_no_comments)
@@ -76,6 +80,8 @@ class Config():
     
     @staticmethod
     def print_help():
+        """Static method to print the appropriate format of the file.
+        """
         print(' The format of the configuration file was not right. It should look something like this:')
         print(' 12   8    1        # number of positions along x and y and on the plate then number of samples at each position') 
         print(' 134.2  29.3  7.5   # coordinates of the top left drop')
@@ -89,6 +95,8 @@ class Config():
         print(' AB_xs2             # plate name (no spaces)')
 
     def write(self):
+        """Writes to the internal configuration to the stored file name.
+        """
         with open(self.fname, "w") as f:
             f.write(str('%6d%6d%6d     # number of positons on x and y, then the number of samples at each position\n'%(self.nx,self.ny,self.samps)))
             f.write(str('%9.3f%9.3f%9.3f  # coordinates of the top left sample\n'%(self.tl[0],self.tl[1],self.tl[2])))
@@ -109,6 +117,8 @@ class Config():
             f.write(self.nroot+'     # plate name\n')
 
     def read(self):
+        """Reads from the stored file name to the internal representation.
+        """
         Ualphabet=self.Ualphabet
         Lalphabet=self.Lalphabet
 
@@ -128,23 +138,39 @@ class Config():
         except:
             raise Exception("invalid file format")
 
-    """
-    Get the sub-sample letter id given sub-sample index
-    """
     def get_subsample_id(self, samp):
+        """Returns the subsample name given the subsample index.
+
+        Returns a lowercase letter representing the subsample name
+
+        Args:
+            samp: An integer representing the subsample within a well
+        """
         return self.Lalphabet[samp]
 
-    """
-    Get the sub-sample index given the sub-sample letter
-    """
     def get_subsample_index(self, letter):
+        """Returns the subsample index given the subsample letter.
+
+        Returns an integer representing the subsample within a well.
+        This is the inverse of get_subsample_id, ex:
+            get_subsample_index(get_subsample_id(0)) == 0
+
+        Args:
+            letter: A single letter representing the subsample
+        """
         if letter in self.Ualphabet[0:self.samps]:
             return self.Ualphabet.find(letter)
         else:
             return self.Lalphabet.find(letter)
 
-    """
-    Get the sample name given row and column
-    """
     def get_sample_name(self, row, col):
+        """Returns the sample name (excluding subsample).
+
+        Returns the external sample name given a row and column. This
+        does not include the subsample, only the major well name (e.g. A1)
+
+        Args:
+            row: An integer for the well's row number
+            col: An integer for the well's column number
+        """
         return self.alphabet[row] + str(col + 1)
