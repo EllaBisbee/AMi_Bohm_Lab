@@ -9,6 +9,8 @@ import RPi.GPIO as GPIO
 import serial, pty, os
 from time import sleep
 
+from GRBL import GRBL
+
 class Microscope():
     """Handles all external interactions with the CNC Machine.
 
@@ -86,39 +88,31 @@ class Microscope():
         GPIO.setup(self.arduinomvmnt, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
         # Connect to the arduino and set zero
-        # TODO: maybe break this up into a separate CNC Machine module?
-        if self.in_dev_machine:
+        portname = None
+        baudrate = 115200
+        if self.in_dev_machine():
             master, slave = pty.openpty()
-            self._sname = os.ttyname(slave) # dummy name
+            master # get rid of unused variable warning
+            portname = os.ttyname(slave) # dummy name (DEVELOMENT)
         else:
-            self._sname = '/dev/ttyUSB0' # real name #TODO: remove from object. Local
-        self._baudrate = 115200
-        self.s = serial.Serial(self._sname,self._baudrate) # open grbl serial port
-        self.s.write(("\r\n\r\n").encode('utf-8')) # Wake up grbl
-        sleep(2) # wait for grbl to initialize
-        self.s.flushInput()  # Flush startup text in serial input
-        self.s.write(('$21=1 \n').encode('utf-8')) # enable hard limits
+            portname = '/dev/ttyUSB0' # real name (PRODUCTION)
+        baudrate = 115200
+        self.grbl = GRBL(portname, baudrate)
+        if self.in_dev_machine():
+            self.grbl.custom_wait_for_response(self.grbl_response)
+
+        self.grbl.hard_limits(True)
         print(' ok so far...')
-        self.s.write(('$H \n').encode('utf-8')) # tell grbl to find zero 
-        self.grbl_response() # Wait for grbl response with carriage return
-        self.s.write(('? \n').encode('utf-8')) # Send g-code block to grbl
-        response = self.grbl_response().decode('utf-8') # Wait for grbl response with carriage return
-        response = response.replace(":",",")
-        response = response.replace(">","")
-        response = response.replace("<","")
-        a_list = response.split(",")
-        self.wx = float(a_list[6])
-        self.wy = float(a_list[7])
-        self.wz = float(a_list[8])
+        self.grbl.run_homing_cycle() # tell grbl to find zero
+        self.wx, self.wy, self.wz = self.grbl.get_work_position()
         if self.wx == -199.0:
-            self.s.write(('G10 L2 P1 X ' + str(self.wx) + ' Y ' + str(self.wy) + ' Z ' + str(self.wz) + ' \n').encode('utf-8')) # ensures that zero is zero and not -199.0, -199.0, -199.0 
-            self.grbl_response() # Wait for grbl response with carriage return
-        self.s.write(('m8 \n').encode('utf-8')) # set pin A3 high -used later to detect end of movement 
+            # ensures that zero is zero and not -199.0, -199.0, -199.0 
+            self.grbl.set_coordinate_system(1, self.wx, self.wy, self.wz)
+        self.grbl.coolant_control(flood=True) # set pin A3 high -used later to detect end of movement 
         print(' You\'ll probably want to click VIEW and turn on some lights at this point. \n Then you may want to check the alignment of the four corner samples')
-        self.s.write(('$x \n').encode('utf-8')) # unlock so spindle power can engage for light2 
-        self.grbl_response() # Wait for grbl response with carriage return
-        self.s.write(('s1000 \n').encode('utf-8')) # set max spindle volocity
-        self.grbl_response() # Wait for grbl response with carriage return
+        self.grbl.kill_alarm_lock() # unlock so spindle power can engage for light2 
+        self.grbl.set_spindle_speed(1000) # set max spindle volocity
+        self.s = self.grbl.s # TODO: remove after changing everything to use GRBL object
 
     def get_machine_position(self):
         """Returns the current position of the machine as [x, y, z]
@@ -170,18 +164,17 @@ class Microscope():
             sleep(1)
             return "<Idle,MPos:0.000,0.000,0.000,WPos:0.000,0.000,0.000>".encode('utf-8')
         else:
-            return self.s.readline()
+            return self.grbl._wait_for_response()
 
     def wait_for_Idle(self):
         """Waits for Arduino to complete movement
 
         TODO: Wait for pin A8 to go low for the new version
         """
-        self.s.write(('m9 \n').encode('utf-8')) # set pin A3 low
-        sleep(0.2) #wait a little just in case
+        self.grbl.coolant_control(flood=False) # set pin A3 low
         while GPIO.input(self.arduinomvmnt):
             sleep(0.1)
-        self.s.write(('m8 \n').encode('utf-8')) # set pin A3 high
+        self.grbl.coolant_control(flood=True) # set pin A3 high
 
     def toggle_light1(self):
         """Light switch for light1
@@ -206,14 +199,12 @@ class Microscope():
         if self.light2_stat:
             GPIO.output(self.light2, GPIO.LOW)
             self.light2_stat = False
-            self.s.write(('m5 \n').encode('utf-8')) # turn off the spindle power
-            self.grbl_response() # Wait for grbl response with carriage return
+            self.grbl.spindle_control(running=False) # turn off the spindle power
             print("light2 turned off")
         else:
             GPIO.output(self.light2, GPIO.HIGH)
             self.light2_stat = True
-            self.s.write(('m3 \n').encode('utf-8')) #turn on spindle power
-            self.grbl_response() # Wait for grbl response with carriage return
+            self.grbl.spindle_control(clockwise=True) # turn on the spindle power
             print("light2 turned on")
 
     def mcoords(self):
@@ -231,9 +222,7 @@ class Microscope():
         self.my = self.config.br[1] * x * y + self.config.bl[1] * (1.-x) * y + self.config.tr[1] * x * (1.-y) + self.config.tl[1] * (1.-x) * (1.-y)
         self.mz = self.config.br[2] * x * y + self.config.bl[2] * (1.-x) * y + self.config.tr[2] * x * (1.-y) + self.config.tl[2] * (1.-x) * (1.-y)
         print('mx,my,mz',self.mx,self.my,self.mz)
-        self.s.write(('G0 x '+str(self.mx)+' y '+str(self.my)+' z '+ str(self.mz) + ' \n').encode('utf-8')) # g-code to grbl
-        sleep(0.2)
-        self.grbl_response() # Wait for grbl response with carriage return
+        self.grbl.rapid_move(self.mx, self.my, self.mz)
         letnum = self.config.get_sample_name(self.yrow, self.xcol)
         if self.config.samps > 1:
             letnum += self.config.get_subsample_id(self.samp)
