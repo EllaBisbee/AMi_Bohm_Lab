@@ -344,7 +344,7 @@ class CalibrationTool(tk.Frame):
         for i in range(config.samps):
             #TODO: I don't think this look is necessary anymore since removing the update to config.samps within this function
             try:
-                test = config.samp_coord[i]
+                _ = config.samp_coord[i]
             except:
                 config.samp_coord = config.samp_coord.append([0., 0.])
         print('samp_coord', config.samp_coord)
@@ -422,7 +422,7 @@ class CalibrationTool(tk.Frame):
             tmp_samp_coord[(int(self.corner))][1] = (m[1]-config.tl[1])/(config.bl[1]-config.tl[1])
             self.parent.config.samp_coord = tmp_samp_coord
             print('new sample '+self.corner+' coordinates: '+str(config.samp_coord[(int(self.corner))]))
-            self.parent.messagearea.setText(self.parent.config.get_subsample_id(int(corner))+" coordinates saved")
+            self.parent.messagearea.setText(self.parent.config.get_subsample_id(int(self.corner))+" coordinates saved")
         else:
             if self.corner == "TL":
                 self.parent.config.tl = m
@@ -774,15 +774,33 @@ class ImagingControls(tk.Frame):
         """
         return datetime.now().strftime('%h-%d-%Y_%I:%M%p').replace(" ","")
 
-    def _get_samp_name(self):
-        """Returns the sample name
+    def _get_samp_name(self, row=None, col=None, samp=None):
+        """Returns the sample name of the current sample or given sample if specified
+
+        Args:
+            row: row of sample
+            col: column of sample
+            samp: subsample index
+
+        Throws:
+            Exception if only one argument is specified.
         """
+        if row or col or samp:
+            assert((row is not None) and (col is not None) and (samp is not None))
+            yrow = row
+            xcol = col
+            samp_index = samp
+        else:
+            yrow = self.parent.microscope.yrow
+            xcol = self.parent.microscope.xcol
+            if self.parent.config.samps > 1:
+                samp_index = self.parent.microscope.samp
+            else:
+                samp_index = None
         self.parent.configurationtool.update_config()
-        yrow = self.parent.microscope.yrow
-        xcol = self.parent.microscope.xcol
         samp_name = self.parent.config.get_sample_name(yrow, xcol)
-        if self.parent.config.samps > 1:
-            samp_name += self.parent.config.get_subsample_id(self.parent.microscope.samp)
+        if self.parent.config.samps > 1 or samp:
+            samp_name += self.parent.config.get_subsample_id(samp_index)
         return samp_name
 
     def _initialize_directories(self, snap=True):
@@ -826,11 +844,12 @@ class ImagingControls(tk.Frame):
         """
         self.parent.configurationtool.update_config()
         path1 = self._initialize_directories()
+        xcol = self.parent.microscope.xcol
+        yrow = self.parent.microscope.yrow
         if self.parent.config.samps == 1: 
-            # TODO: is there a better way to write this using functions in other modules?
-            sname = 'images/' + self.parent.config.sID + '/' + self.parent.config.nroot + '/snaps/' + self.parent.config.alphabet[self.parent.microscope.yrow]+str(self.parent.microscope.xcol+1)+"_"+self.tdate()+'.jpg'
+            sname = path1 + '/' + self.parent.config.get_sample_name(yrow, xcol)+"_"+self.tdate()+'.jpg'
         else:
-            sname = 'images/' + self.parent.config.sID + '/' + self.parent.config.nroot + '/snaps/' + self.parent.config.alphabet[self.parent.microscope.yrow]+str(self.parent.microscope.xcol+1)+self.parent.config.get_subsample_id(self.parent.microscope.samp)+"_"+self.tdate()+'.jpg'
+            sname = path1 + '/' + self.parent.config.get_sample_name(yrow, xcol)+self.parent.config.get_subsample_id(self.parent.microscope.samp)+"_"+self.tdate()+'.jpg'
         self.parent.microscope.camera.capture(sname)
         self.parent.messagearea.setText("image saved to {}".format(sname))
 
@@ -903,7 +922,7 @@ class ImagingControls(tk.Frame):
                 for samp in range(self.parent.config.samps):
                     self.parent.microscope.mcoords() # go to the expected position of the focussed sample 
                     z = self.parent.microscope.mz-(1-self.parent.microscope.fracbelow)*zrange # bottom of the zrange (this is the top of the sample!)
-                    samp_name = self._get_samp_name()
+                    samp_name = self._get_samp_name(yrow, xcol, samp)
                     processf.write('echo \'processing: '+samp_name+'\' \n')
                     line='align_image_stack -m -a OUT '
                     # TODO: i think this is reused in snap function
@@ -1040,13 +1059,13 @@ class ConfigurationTool(tk.Frame):
             event: information on the event that triggered this
         """
         if not self.parent.config:
-            self.messagearea.setText("There is not existing configuration to update. Nothing written")
+            self.parent.messagearea.setText("There is not existing configuration to update. Nothing written")
             return
 
         tmp_fname = str(self.filee.get())
         if " " in tmp_fname:
             self.parent.messagearea.setText("file name cannot contain spaces. Nothing written.")
-            self.filee.delete(0,END)
+            self.filee.delete(0,tk.END)
             self.filee.insert(0,"")
             self.update()
         else:
@@ -1058,7 +1077,7 @@ class ConfigurationTool(tk.Frame):
         """Updates all config values to current values held in text fields
         """
         if not self.parent.config:
-            self.messagearea.setText("There is not existing configuration to update. Nothing written")
+            self.parent.messagearea.setText("There is not existing configuration to update. Nothing written")
             return
         
         self.parent.config.fname = str(self.filee.get())
@@ -1202,7 +1221,7 @@ class GUI(tk.Frame):
         if self.microscope.light1_stat:
             self.microscope.toggle_light1()
         if self.microscope.light2_stat:
-            self.microscope.toggle_light2()
+            self.microscope.toggle_light2_arduino()
         self.microscope.s.close()
         if self.microscope.viewing:
             self.microscope.switch_camera_preview()

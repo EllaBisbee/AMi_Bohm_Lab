@@ -105,7 +105,7 @@ class Config():
             f.write(str('%9.3f%9.3f%9.3f  # coordinates of the bottom right sample\n'%(self.br[0],self.br[1],self.br[2])))
             for i in range(self.samps):
                 try: 
-                    test=self.samp_coord[i]
+                    _=self.samp_coord[i]
                 except: 
                     self.samp_coord.append([0., 0.])
                 ta=float(self.samp_coord[i][0])
