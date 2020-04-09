@@ -129,6 +129,11 @@ class GRBL():
         self.s.write(("${}={} \n").format(code,val).encode("utf-8"))
         return self.wait_for_response()
 
+    def close(self):
+        """Closes the grbl connection
+        """
+        self.s.close()
+
     def hard_limits(self, val):
         """Sets hard limits to the given value
 
@@ -150,7 +155,7 @@ class GRBL():
         Returns:
             The response from the "wait for response" method
         """
-        self.s.write(('$H \n').encode('utf-8'))
+        self.s.write("${} \n".format(RUN_HOMING_CYCLE).encode('utf-8'))
         return self.wait_for_response()
 
     def kill_alarm_lock(self):

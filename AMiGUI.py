@@ -202,10 +202,7 @@ class TranslationTool(tk.Frame):
         self.parent.microscope.mz += 0.0001 * (abs(rz)**2.2) * np.sign(rz)
         if (self.parent.microscope.mz > 0. and 
            self.parent.microscope.mz < self.parent.microscope.zmax):
-            self.parent.microscope.s.write(
-                ('G0 z'+ str(self.parent.microscope.mz) + 
-                '\n').encode('utf-8')) # Send g-code block to grbl
-            self.parent.microscope.grbl_response() # Wait for grbl response
+            self.parent.microscope.grbl.rapid_move(z=self.parent.microscope.mz)
             message = ('current Z: '+str(round(self.parent.microscope.mz,3))+
                       ' change: '+
                       str(round((self.parent.microscope.mz-mzsav),3)))
@@ -238,10 +235,9 @@ class TranslationTool(tk.Frame):
         if (self.parent.microscope.mx>0. and self.parent.microscope.my>0. and 
            self.parent.microscope.mx < self.parent.microscope.xmax and 
            self.parent.microscope.my < self.parent.microscope.ymax):
-            self.parent.microscope.s.write(
-                ('G0 x'+ str(self.parent.microscope.mx) + ' y ' + 
-                str(self.parent.microscope.my) +'\n').encode('utf-8')) 
-            self.parent.microscope.grbl_response() # Wait for grbl response
+            self.parent.microscope.grbl.rapid_move(
+                x=self.parent.microscope.mx,
+                y=self.parent.microscope.my)
             if self.parent.calibrationtool.corner:
                 self.parent.messagearea.setText(
                     'current X,Y: {}, {}'.format(
@@ -504,10 +500,8 @@ class HardwareControls(tk.Frame):
         self.parent.calibrationtool.corner = None
         print("clicked origin reset")
         self.parent.messagearea.setText("wait while machine resets...")
-        self.parent.microscope.s.write(('$X \n').encode('utf-8')) # Send g-code home command to grbl
-        self.parent.microscope.grbl_response() # Wait for grbl response with carriage return
-        self.parent.microscope.s.write(('$H \n').encode('utf-8')) # Send g-code home command to grbl
-        self.parent.microscope.grbl_response() # Wait for grbl response with carriage return
+        self.parent.microscope.grbl.kill_alarm_lock()
+        self.parent.microscope.grbl.run_homing_cycle() # Send g-code home command to grbl
         self.parent.messagearea.setText("Ready to rumble!")
 
     def reset_right_cb(self, event):
@@ -518,8 +512,7 @@ class HardwareControls(tk.Frame):
         self.parent.calibrationtool.corner = None
         print("clicked reset alarm")
         self.parent.messagearea.setText("$X sent to GRBL...")
-        self.parent.microscope.s.write(('$X \n').encode('utf-8')) # Send g-code home command to grbl
-        self.parent.microscope.grbl_response() # Wait for grbl response with carriage return
+        self.parent.microscope.grbl.kill_alarm_lock()
         self.parent.messagearea.setText("It might work now...")
 
     def close_cb(self, event):
@@ -872,8 +865,7 @@ class ImagingControls(tk.Frame):
         samp_name += '_' + self.tdate()
         line = 'align_image_stack -m -a OUT '
         for imgnum in range(self.parent.config.nimages):
-            self.parent.microscope.s.write(('G0 z '+ str(z) + '\n').encode('utf-8')) # move to z
-            self.parent.microscope.grbl_response()
+            self.parent.microscope.grbl.rapid_move(z=z)
             self.parent.microscope.wait_for_Idle()
             imgname = path1 + '/' + samp_name + '_' + str(imgnum) + '.jpg'
             sleep(self.parent.microscope.camera_delay)#slow things down to allow camera to settle down
@@ -885,8 +877,7 @@ class ImagingControls(tk.Frame):
         processf.write('enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 --hard-mask --output='+samp_name+'.tif OUT*.tif \n')
         processf.write('rm OUT*.tif \n')
         processf.close()
-        self.parent.microscope.s.write(('G0 z '+ str(z_sav) + '\n').encode('utf-8')) # return to original z 
-        self.parent.microscope.grbl_response()
+        self.parent.microscope.grbl.rapid_move(z=z_sav) # return to original z 
         self.parent.microscope.wait_for_Idle()
         self.parent.messagearea.setText("individual images:" + path1 + "\n" + 'source '+samp_name+'_process_snap.com to combine z-stack')
     
@@ -915,7 +906,7 @@ class ImagingControls(tk.Frame):
         self.parent.microscope.running=True
         self.parent.messagearea.setText("imaging samples...")
         if self.parent.microscope.disable_hard_limits: 
-            self.parent.microscope.s.write(('$21=0 \n').encode('utf-8')) #turn off hard limits
+            self.parent.microscope.grbl.hard_limits(False)
             print('hard limits disabled')
         for yrow in range(self.parent.config.ny):
             for xcol in range(self.parent.config.nx):
@@ -927,8 +918,7 @@ class ImagingControls(tk.Frame):
                     line='align_image_stack -m -a OUT '
                     # TODO: i think this is reused in snap function
                     for imgnum in range(self.parent.config.nimages):
-                        self.parent.microscope.s.write(('G0 z '+ str(z) + '\n').encode('utf-8')) # move to z
-                        self.parent.microscope.grbl_response()
+                        self.parent.microscope.rapid_move(z=z)
                         self.parent.microscope.wait_for_Idle()
                         sleep(0.2)
                         # take image
@@ -953,8 +943,8 @@ class ImagingControls(tk.Frame):
         self.parent.microscope.toggle_light1() #turn off light1
         self.parent.microscope.toggle_light2_arduino() #turn off light2
         if self.parent.microscope.disable_hard_limits: 
-           self.parent.microscope.s.write(('$21=1 \n').encode('utf-8')) # turn hard limits back on
-           print('hard limits enabled')
+            self.parent.microscope.grbl.hard_limits(True) # turn hard limits back on
+            print('hard limits enabled')
         self.parent.microscope.stopit = False
 
 class MovementAndImaging(tk.Frame):
@@ -1216,13 +1206,12 @@ class GUI(tk.Frame):
         """Performs closing procedures
         """
         print('moving back to the origin and closing the graphical user interface')
-        self.microscope.s.write(('$H \n').encode('utf-8')) # tell grbl to find zero 
-        self.microscope.grbl_response() # Wait for grbl response with carriage return
+        self.microscope.grbl.run_homing_cycle() # tell grbl to find zero 
         if self.microscope.light1_stat:
             self.microscope.toggle_light1()
         if self.microscope.light2_stat:
             self.microscope.toggle_light2_arduino()
-        self.microscope.s.close()
+        self.microscope.grbl.close()
         if self.microscope.viewing:
             self.microscope.switch_camera_preview()
         self.parent.destroy()

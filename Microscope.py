@@ -112,7 +112,6 @@ class Microscope():
         print(' You\'ll probably want to click VIEW and turn on some lights at this point. \n Then you may want to check the alignment of the four corner samples')
         self.grbl.kill_alarm_lock() # unlock so spindle power can engage for light2 
         self.grbl.set_spindle_speed(1000) # set max spindle volocity
-        self.s = self.grbl.s # TODO: remove after changing everything to use GRBL object
 
     def get_machine_position(self):
         """Returns the current position of the machine as [x, y, z]
