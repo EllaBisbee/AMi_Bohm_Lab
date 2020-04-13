@@ -643,14 +643,13 @@ class MovementTool(tk.Frame):
             else:
                 self.parent.messagearea.setText("input error")
         else: # assume it is letter then number format
-            rowletter = major_well[0]
-            colnum = int(major_well[1:])
-            if ((rowletter in self.parent.config.alphabet) and (colnum <= self.parent.config.nx)): 
-                self.parent.microscope.yrow = self.parent.config.alphabet.index(rowletter) 
+            if self.parent.config.is_valid_sample_name(major_well): 
+                row, col = self.parent.config.get_row_col(major_well)
+                self.parent.microscope.yrow = row
                 # TODO: also add functions in config/micro to do this. When would it be necessary to recalculate yrow
                 if self.parent.microscope.yrow > (self.parent.config.ny-1): 
                     self.parent.microscope.yrow = self.parent.microscope.yrow - self.parent.config.ny
-                self.parent.microscope.xcol = colnum - 1
+                self.parent.microscope.xcol = col
                 self.parent.microscope.mcoords()
             else:
                 self.parent.messagearea.setText("input error")
@@ -1144,7 +1143,10 @@ class GUI(tk.Frame):
         # Set up initial configuration
         self.config = None
         self.read_config()
-        self.microscope = Microscope(self.config)
+        xmax, ymax, zmax = 160., 118., 29.3
+        fracbelow = 0.5
+        camera_delay = 0.2
+        self.microscope = Microscope(self.config, xmax, ymax, zmax, fracbelow, camera_delay)
         
         # Create GUI Areas
         self.messagearea = MessageArea(self, text="Welcome AMi!")
@@ -1201,6 +1203,29 @@ class GUI(tk.Frame):
         except:
             Config.print_help()
             if fname=='AMi.config': sys.exit() #TODO: what does this do?, I think this closes the program if the configuration file does not exist in the directory??
+
+    def mcoords(self, newcol, newrow, newsamp=0):
+        """Communicates moves to the microscope and updates GUI window to reflect
+        new position of microscope.
+        """
+        self.microscope.xcol = newcol
+        self.microscope.yrow = newrow
+        self.microscope.samp = newsamp
+        mx, my, mz = self.microscope.mcoords()
+
+        if self.config.samps > 1:
+            position_str = self.config.get_name_with_subsample(newrow, newcol, newsamp)
+        else:
+            position_str = self.config.get_sample_name(newrow, newcol)
+
+        self.movementtool.pose.delete(0, tk.END)
+        self.movementtool.pose.insert(0, position_str)
+
+        message = "showing {} position {}\n".format(
+            position_str, newrow*self.config.nx + newcol+1)
+        message += "machine coordinates: {}, {}, {}".format(
+            round(mx, 3), round(my, 3), round(mz, 3))
+        self.messagearea.setText(message)
 
     def close(self):
         """Performs closing procedures

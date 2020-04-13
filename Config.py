@@ -43,10 +43,7 @@ class Config():
         nimages: Integer number of images per drop
         nroot: String plate name (no spaces)
         sID: String sample name (no spaces)
-        alphabet: used to keep track of labels for wells #TODO: better description
-        Ualphabet: Used to track main wells #TODO: convert to internal?
-        Lalphabet: Used to track sub-samples within each well #TODO: convert to internal?
-        samp_coord: fractional coordinates of the individual samples #TODO: what is this?
+        samp_coord: fractional coordinates of sub-samples within wells
     """
     def __init__(self, fname):
         """Initializes the configuration based on given file.
@@ -55,8 +52,8 @@ class Config():
             raise ValueError("invalid configuration file path.")
 
         self.fname = fname
-        self.Ualphabet = string.ascii_uppercase
-        self.Lalphabet = string.ascii_lowercase
+        self._Ualphabet = string.ascii_uppercase
+        self._Lalphabet = string.ascii_lowercase
         self.read()
     
     def _next_config(self, file, f):
@@ -119,8 +116,8 @@ class Config():
     def read(self):
         """Reads from the stored file name to the internal representation.
         """
-        Ualphabet=self.Ualphabet
-        Lalphabet=self.Lalphabet
+        Ualphabet=self._Ualphabet
+        Lalphabet=self._Lalphabet
 
         try:
             with open(self.fname, 'r') as f:
@@ -134,7 +131,7 @@ class Config():
                 self.nimages = self._next_config(f, int)[0]
                 self.sID = self._next_config(f, str)[0].replace("\n", "").replace(" ", "")
                 self.nroot = self._next_config(f, str)[0].replace("\n", "").replace(" ", "")
-                self.alphabet=Ualphabet[0:self.ny]+Lalphabet[0:self.ny]
+                self._alphabet=Ualphabet[0:self.ny]+Lalphabet[0:self.ny]
         except:
             raise Exception("invalid file format")
 
@@ -146,7 +143,7 @@ class Config():
         Args:
             samp: An integer representing the subsample within a well
         """
-        return self.Lalphabet[samp]
+        return self._Lalphabet[samp]
 
     def get_subsample_index(self, letter):
         """Returns the subsample index given the subsample letter.
@@ -158,10 +155,10 @@ class Config():
         Args:
             letter: A single letter representing the subsample
         """
-        if letter in self.Ualphabet[0:self.samps]:
-            return self.Ualphabet.find(letter)
+        if letter in self._Ualphabet[0:self.samps]:
+            return self._Ualphabet.find(letter)
         else:
-            return self.Lalphabet.find(letter)
+            return self._Lalphabet.find(letter)
 
     def get_sample_name(self, row, col):
         """Returns the sample name (excluding subsample).
@@ -173,4 +170,36 @@ class Config():
             row: An integer for the well's row number
             col: An integer for the well's column number
         """
-        return self.alphabet[row] + str(col + 1)
+        return self._alphabet[row] + str(col + 1)
+
+    def get_row_col(self, name):
+        """Returns the row and column indices of a given sample name
+
+        Args:
+            name: the sample name
+        """
+        rowletter = name[0]
+        colnum = int(name[1:])
+        return self._alphabet.index(rowletter), colnum - 1
+
+    def get_name_with_subsample(self, row, col, samp):
+        """Returns the sample name with the subsample id
+
+        Args:
+            row: An integer for the well's row number
+            col: An integer for the well's column number
+            samp: An integer for the subsample index
+        """
+        return self.get_sample_name(row, col) + self.get_subsample_id(samp)
+
+    def is_valid_sample_name(self, name):
+        """Checks if the given name is a valid sample name in format LETTER then NUMBER
+        e.g. A1, B4
+
+        Args:
+            name: the sample name
+        """
+        rowletter = name[0]
+        colnum = int(name[1:])
+
+        return rowletter in self._alphabet and colnum <= self.nx

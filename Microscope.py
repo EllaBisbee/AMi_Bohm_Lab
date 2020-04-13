@@ -49,7 +49,7 @@ class Microscope():
         disable_hard_limits: A Boolean indicating whether to disable
             hard limits of the CNC Machine during RUN only
     """
-    def __init__(self, config):
+    def __init__(self, config, xmax, ymax, zmax, fracbelow, camera_delay):
         """Inits Microscope with given config object"""
         self.xcol = 0
         self.yrow = 0
@@ -57,22 +57,21 @@ class Microscope():
         self.mx = 0
         self.my = 0
         self.mz = 0
-        self.xmax = 160.
-        self.ymax = 118.
-        self.zmax = 29.3
+        self.xmax = xmax
+        self.ymax = ymax
+        self.zmax = zmax
         self.viewing = False
         self.running = False
         self.stopit = False
-        self.fracbelow = 0.5
-        self.camera_delay = 0.2
+        self.fracbelow = fracbelow
+        self.camera_delay = camera_delay
         self.disable_hard_limits = True
-        # TODO: Maybe config could live inside microscope and GUI could pull config from here?
         self.config = config
 
-        # Camera setup
+        # Camera setup. Change if new camera is purchased
         self.camera = PiCamera()
-        self.camera.resolution = (1640, 1232) #TODO: make this a parameter?
-        self.camera.iso = 50 # not sure this does anything TODO: make this a parameter?
+        self.camera.resolution = (1640, 1232)
+        self.camera.iso = 50 # not sure this does anything
 
         # GPIO Controls
         self.light1 = 17
@@ -90,7 +89,7 @@ class Microscope():
         # Connect to the arduino and set zero
         portname = None
         baudrate = 115200
-        if self.in_dev_machine():
+        if self._in_dev_machine():
             master, slave = pty.openpty()
             master # get rid of unused variable warning
             portname = os.ttyname(slave) # dummy name (DEVELOMENT)
@@ -98,7 +97,7 @@ class Microscope():
             portname = '/dev/ttyUSB0' # real name (PRODUCTION)
         baudrate = 115200
         self.grbl = GRBL(portname, baudrate)
-        if self.in_dev_machine():
+        if self._in_dev_machine():
             self.grbl.custom_wait_for_response(self.grbl_response)
 
         self.grbl.hard_limits(True)
@@ -134,7 +133,7 @@ class Microscope():
             self.camera.start_preview(fullscreen=False, window=(0,-76,1597,1200)) # TODO: add dynamic window calculation
             self.viewing = True
 
-    def in_dev_machine(self): #TODO: make private
+    def _in_dev_machine(self):
         """Determines if program is in development
 
         Determines if the program is running in development on a machine not
@@ -159,7 +158,7 @@ class Microscope():
             A carriage-return terminated response from grbl or a dummy
             response if the program is in development.
         """
-        if self.in_dev_machine:
+        if self._in_dev_machine:
             sleep(1)
             return "<Idle,MPos:0.000,0.000,0.000,WPos:0.000,0.000,0.000>".encode('utf-8')
         else:
@@ -167,8 +166,6 @@ class Microscope():
 
     def wait_for_Idle(self):
         """Waits for Arduino to complete movement
-
-        TODO: Wait for pin A8 to go low for the new version
         """
         self.grbl.coolant_control(flood=False) # set pin A3 low
         while GPIO.input(self.arduinomvmnt):
@@ -211,6 +208,9 @@ class Microscope():
 
         Calculates the desired machine location based on internal sample
         location and sends a move signal to grbl.
+
+        Returns:
+            The new mx, my, mz machine positions
         """
         print("called mcoords with yrow,xcol,samp:",self.yrow,self.xcol,self.samp)
         self.wait_for_Idle()
@@ -220,15 +220,7 @@ class Microscope():
         self.mx = self.config.br[0] * x * y + self.config.bl[0] * (1.-x) * y + self.config.tr[0] * x * (1.-y) + self.config.tl[0] * (1.-x) * (1.-y)
         self.my = self.config.br[1] * x * y + self.config.bl[1] * (1.-x) * y + self.config.tr[1] * x * (1.-y) + self.config.tl[1] * (1.-x) * (1.-y)
         self.mz = self.config.br[2] * x * y + self.config.bl[2] * (1.-x) * y + self.config.tr[2] * x * (1.-y) + self.config.tl[2] * (1.-x) * (1.-y)
-        print('mx,my,mz',self.mx,self.my,self.mz)
+        print('mx,my,mz',self.mx,self.my,self.mz) # TODO: does this need to be here?
         self.grbl.rapid_move(self.mx, self.my, self.mz)
-        letnum = self.config.get_sample_name(self.yrow, self.xcol)
-        if self.config.samps > 1:
-            letnum += self.config.get_subsample_id(self.samp)
-        #pose.delete(0,tk.END); pose.insert(0,letnum) TODO: figure out how to put this back in
         self.wait_for_Idle()
-        """
-        canvas.create_rectangle(2,2,318,60,fill='white')
-        canvas.create_text(160,20,text=("showing "+letnum+'  position '+str(yrow*config.nx+xcol+1)),font="helvetica 11")
-        canvas.create_text(160,39,text=('machine coordinates:  '+str(round(mx,3))+',  '+str(round(my,3))+',  '+str(round(mz,3))),font="helvetica 9",fill="grey")
-        canvas.update()""" # TODO: figure out how to put this back in
+        return self.mx, self.my, self.mz
