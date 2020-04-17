@@ -4,8 +4,6 @@ This file contains all of the modules and classes needed to create the
 GUI.
 """
 
-# TODO: make callbacks private?
-
 import tkinter as tk
 from tkinter import ttk
 import sys, os
@@ -51,10 +49,8 @@ class MessageArea(tk.Frame):
         """
         self._label.config(wraplength=self.parent.winfo_width())
 
-    def setText(self, t):
+    def set_text(self, t):
         """Changes the text displayed.
-
-        TODO: change setText to set_text to match naming convention
 
         Args:
             t: String containing the new text
@@ -207,12 +203,12 @@ class TranslationTool(tk.Frame):
                       ' change: '+
                       str(round((self.parent.microscope.mz-mzsav),3)))
             if self.parent.calibrationtool.corner:
-                self.parent.messagearea.setText(message)
+                self.parent.messagearea.set_text(message)
             else:
-                self.parent.messagearea.setText("")
+                self.parent.messagearea.set_text("")
             print(message)
         else:
-            self.parent.messagearea.setText(
+            self.parent.messagearea.set_text(
                 "that move would take you out of bounds")
             self.parent.microscope.mz = mzsav
 
@@ -239,12 +235,12 @@ class TranslationTool(tk.Frame):
                 x=self.parent.microscope.mx,
                 y=self.parent.microscope.my)
             if self.parent.calibrationtool.corner:
-                self.parent.messagearea.setText(
+                self.parent.messagearea.set_text(
                     'current X,Y: {}, {}'.format(
                         str(round(self.parent.microscope.mx,3)), 
                         str(round((self.parent.microscope.my),3))))
             else:
-                self.parent.messagearea.setText('')
+                self.parent.messagearea.set_text('')
             print('current X: {} change: {}'.format(
                 str(round(self.parent.microscope.mx,3)),
                 str(round((self.parent.microscope.mx-mxsav),3))))
@@ -252,7 +248,7 @@ class TranslationTool(tk.Frame):
                 str(round(self.parent.microscope.my,3)),
                 str(round((self.parent.microscope.my-mysav),3))))
         else:
-            self.parent.messagearea.setText(
+            self.parent.messagearea.set_text(
                 "that move would take you out of bounds")
             self.parent.microscope.mx = mxsav
             self.parent.microscope.my = mysav
@@ -262,7 +258,7 @@ class CalibrationTool(tk.Frame):
 
     Attributes:
         parent: actual parent is a container so this is the container's parent
-        corner: the corner currently calibrating
+        corner: the corner OR subsample index currently calibrating
         tlButton: the button to select the top left corner
         trButton: the button to select the top right corner
         blButton: the button to select the bottom left corner
@@ -320,43 +316,37 @@ class CalibrationTool(tk.Frame):
         """
         self.parent.configurationtool.update_config()
         self.corner = "TL"
-        self.parent.microscope.xcol = 0
-        self.parent.microscope.yrow = 0
-        self.parent.microscope.samp = 0
-        self.parent.microscope.mcoords()
+        self.parent.mcoords(0, 0, 0)
         if self.parent.config.samps > 1:
-            self.parent.messagearea.setText("SET now changes TL coordinates. After the corners Right Click TL for sub-samples")
+            self.parent.messagearea.set_text("SET now changes TL coordinates. After the corners Right Click TL for sub-samples")
         else:
-            self.parent.messagearea.setText("SET now changes TL coordinates.")
+            self.parent.messagearea.set_text("SET now changes TL coordinates.")
 
     def tl_right_cb(self, event):
         """Callback for the top left button right click.
+
+        Updates subsample offsets
 
         Args:
             event: information on the event that triggered this
         """
         self.parent.configurationtool.update_config()
         config = self.parent.config
-        for i in range(config.samps):
-            #TODO: I don't think this look is necessary anymore since removing the update to config.samps within this function
-            try:
-                _ = config.samp_coord[i]
-            except:
-                config.samp_coord = config.samp_coord.append([0., 0.])
+        if len(config.samp_coord) < config.samps:
+            diff = config.samps - len(config.samp_coord)
+            config.samp_coord.extend([[0., 0.] for _ in range(diff)])
         print('samp_coord', config.samp_coord)
         if config.samps > 1:
-            self.parent.microscope.samp += 1
-            if self.parent.microscope.samp == config.samps:
-                self.parent.microscope.samp = 1
+            newsamp = self.parent.microscope.samp + 1
+            if newsamp == config.samps:
+                newsamp = 1
             self.corner = str(self.parent.microscope.samp)
-            self.parent.microscope.xcol = 0
-            self.parent.microscope.yrow = 0
-            self.parent.microscope.mcoords()
-            self.parent.messagearea.setText("SET now changes sub-sample " + 
+            self.parent.mcoords(0, 0, newsamp)
+            self.parent.messagearea.set_text("SET now changes sub-sample " + 
                                             config.get_subsample_id(self.parent.microscope.samp) + 
                                             " coordinates.")
         else:
-            self.parent.messagearea.setText("no sub-samples specified.")
+            self.parent.messagearea.set_text("no sub-samples specified.")
 
     def tr_cb(self, event):
         """Callback for the top right button left click.
@@ -366,11 +356,8 @@ class CalibrationTool(tk.Frame):
         """
         self.parent.configurationtool.update_config()
         self.corner = "TR"
-        self.parent.microscope.xcol = self.parent.config.nx - 1
-        self.parent.microscope.yrow = 0
-        self.parent.microscope.samp = 0
-        self.parent.microscope.mcoords()
-        self.parent.messagearea.setText("SET now changes TR coordinates.")
+        self.parent.mcoords(self.parent.config.nx - 1, 0, 0)
+        self.parent.messagearea.set_text("SET now changes TR coordinates.")
     
     def bl_cb(self, event):
         """Callback for the bottom left button left click.
@@ -380,11 +367,8 @@ class CalibrationTool(tk.Frame):
         """
         self.parent.configurationtool.update_config()
         self.corner = "BL"
-        self.parent.microscope.xcol = 0
-        self.parent.microscope.yrow = self.parent.config.ny - 1
-        self.parent.microscope.samp = 0
-        self.parent.microscope.mcoords()
-        self.parent.messagearea.setText("SET now changes BL coordinates.")
+        self.parent.mcoords(0, self.parent.config.ny - 1, 0)
+        self.parent.messagearea.set_text("SET now changes BL coordinates.")
 
     def br_cb(self, event):
         """Callback for the bottom right button left click.
@@ -394,11 +378,8 @@ class CalibrationTool(tk.Frame):
         """
         self.parent.configurationtool.update_config()
         self.corner = "BR"
-        self.parent.microscope.xcol = self.parent.config.nx - 1
-        self.parent.microscope.yrow = self.parent.config.ny - 1
-        self.parent.microscope.samp = 0
-        self.parent.microscope.mcoords()
-        self.parent.messagearea.setText("SET now changes BR coordinates.")
+        self.parent.mcoords(self.parent.config.nx - 1, self.parent.config.ny - 1, 0)
+        self.parent.messagearea.set_text("SET now changes BR coordinates.")
 
     def set_cb(self, event):
         """Callback for the set button left click.
@@ -409,16 +390,17 @@ class CalibrationTool(tk.Frame):
         self.parent.configurationtool.update_config()
         m = self.parent.microscope.get_machine_position()
         config = self.parent.config
-        if not self.corner:
-            self.parent.messagearea.setText("You must first select a corner")
+        if self.corner is None:
+            self.parent.messagearea.set_text("You must first select a corner")
         elif self.corner.isdigit():
-            #TODO: figure out what this math is doing and maybe move to microscope?
-            tmp_samp_coord = config.samp_coord
-            tmp_samp_coord[(int(self.corner))][0] = (m[0]-config.tl[0])/(config.tr[0]-config.tl[0])
-            tmp_samp_coord[(int(self.corner))][1] = (m[1]-config.tl[1])/(config.bl[1]-config.tl[1])
-            self.parent.config.samp_coord = tmp_samp_coord
-            print('new sample '+self.corner+' coordinates: '+str(config.samp_coord[(int(self.corner))]))
-            self.parent.messagearea.setText(self.parent.config.get_subsample_id(int(self.corner))+" coordinates saved")
+            subsample = int(self.corner)
+            x_offset = (m[0]-config.tl[0])/(config.tr[0]-config.tl[0])
+            y_offset = (m[1]-config.tl[1])/(config.bl[1]-config.tl[1])
+            (config.samp_coord)[subsample] = [x_offset, y_offset]
+            print("new sample {} coordinates: {}".format(
+                subsample, config.samp_coord[subsample]))
+            self.parent.messagearea.set_text("{} coordinates saved".format(
+                config.get_subsample_id(subsample)))
         else:
             if self.corner == "TL":
                 self.parent.config.tl = m
@@ -429,7 +411,7 @@ class CalibrationTool(tk.Frame):
             elif self.corner == "BR":
                 self.parent.config.br = m
             print('new', self.corner, m)
-            self.parent.messagearea.setText(self.corner + " coordinates saved")
+            self.parent.messagearea.set_text(self.corner + " coordinates saved")
         
         self.corner = None
 
@@ -489,7 +471,7 @@ class HardwareControls(tk.Frame):
         """
         if not self.parent.microscope.running:
             self.parent.microscope.switch_camera_preview()
-            self.parent.messagearea.setText("click VIEW to open/close live view")
+            self.parent.messagearea.set_text("click VIEW to open/close live view")
 
     def reset_cb(self, event):
         """Resets CNC machine to home
@@ -499,10 +481,10 @@ class HardwareControls(tk.Frame):
         """
         self.parent.calibrationtool.corner = None
         print("clicked origin reset")
-        self.parent.messagearea.setText("wait while machine resets...")
+        self.parent.messagearea.set_text("wait while machine resets...")
         self.parent.microscope.grbl.kill_alarm_lock()
         self.parent.microscope.grbl.run_homing_cycle() # Send g-code home command to grbl
-        self.parent.messagearea.setText("Ready to rumble!")
+        self.parent.messagearea.set_text("Ready to rumble!")
 
     def reset_right_cb(self, event):
         """Resets CNC machine to home due to critical error (alarm)
@@ -511,9 +493,9 @@ class HardwareControls(tk.Frame):
         """
         self.parent.calibrationtool.corner = None
         print("clicked reset alarm")
-        self.parent.messagearea.setText("$X sent to GRBL...")
+        self.parent.messagearea.set_text("$X sent to GRBL...")
         self.parent.microscope.grbl.kill_alarm_lock()
-        self.parent.messagearea.setText("It might work now...")
+        self.parent.messagearea.set_text("It might work now...")
 
     def close_cb(self, event):
         """Closes the interface if not collecting images. Stops otherwise.
@@ -622,37 +604,19 @@ class MovementTool(tk.Frame):
         pose_txt = pose_txt.replace(" ", "") #get rid of spaces
         pose_txt = pose_txt.rstrip("\r\n") # get rid of carraige return
         self.parent.microscope.samp = 0
-        major_well = pose_txt
+        sample_name = pose_txt
 
-        # first deal with the sub-sample character if present
-        if not pose_txt[-1].isdigit(): # sub-sample is specified
-            # TODO: add error checking for subsample within samps
-            self.parent.microscope.samp = self.parent.config.get_subsample_index(pose_txt[-1])
-            major_well = pose_txt[0:-1] # get major well letter id
-        
-        # now see if it is in number format
-        if major_well[0].isdigit(): 
-            numb = int(major_well) 
-            numb -= 1
-            if numb < self.parent.config.nx * self.parent.config.ny and numb >= 0:
-                # TODO: add functions in config to calculate this stuff (row/col)
-                self.parent.microscope.yrow = int(numb / self.parent.config.nx)
-                self.parent.microscope.xcol = numb - (self.parent.microscope.yrow * self.parent.config.nx)
-                print('yrow,xcol',self.parent.microscope.yrow, self.parent.microscope.xcol)
-                self.parent.microscope.mcoords()
-            else:
-                self.parent.messagearea.setText("input error")
-        else: # assume it is letter then number format
-            if self.parent.config.is_valid_sample_name(major_well): 
-                row, col = self.parent.config.get_row_col(major_well)
-                self.parent.microscope.yrow = row
-                # TODO: also add functions in config/micro to do this. When would it be necessary to recalculate yrow
-                if self.parent.microscope.yrow > (self.parent.config.ny-1): 
-                    self.parent.microscope.yrow = self.parent.microscope.yrow - self.parent.config.ny
-                self.parent.microscope.xcol = col
-                self.parent.microscope.mcoords()
-            else:
-                self.parent.messagearea.setText("input error")
+        try:
+            # first deal with the sub-sample character if present
+            samp = 0
+            if not sample_name[-1].isdigit(): # sub-sample is specified
+                samp = self.parent.config.get_subsample_index(sample_name[-1])
+                sample_name = sample_name[0:-1] # remove subsample
+            row, col = self.parent.config.get_row_col(sample_name)
+            print('yrow,xcol',row, col)
+            self.parent.mcoords(col, row, samp)
+        except:
+            self.parent.messagearea.set_text("input error")
 
     def prev_left_cb(self, event):
         """Navigates to the sample before the current one
@@ -662,21 +626,21 @@ class MovementTool(tk.Frame):
         """
         self.parent.configurationtool.update_config()
         self.corner = None
-        self.parent.messagearea.setText("")
+        self.parent.messagearea.set_text("")
         if self.parent.microscope.samp > 0:
-            self.parent.microscope.samp -= 1
-            self.parent.microscope.mcoords()
+            self.parent.mcoords(newcol=self.parent.microscope.xcol,
+                                newrow=self.parent.microscope.yrow,
+                                newsamp=self.parent.microscope.samp-1)
         elif self.parent.microscope.xcol > 0:
-            self.parent.microscope.xcol -= 1
-            self.parent.microscope.samp = self.parent.config.samps - 1
-            self.parent.microscope.mcoords()
+            self.parent.mcoords(newcol=self.parent.microscope.xcol - 1,
+                                newrow=self.parent.microscope.yrow,
+                                newsamp=self.parent.microscope.samp-1)
         elif self.parent.microscope.yrow > 0:
-            self.parent.microscope.yrow -= 1
-            self.parent.microscope.xcol = self.parent.config.nx - 1
-            self.parent.microscope.samp = self.parent.config.samps-1
-            self.parent.microscope.mcoords()
+            self.parent.mcoords(newcol=self.parent.config.nx-1,
+                                newrow=self.parent.microscope.yrow-1,
+                                newsamp=self.parent.microscope.samp-1)
         else:
-            self.parent.messagearea.setText("cannot reverse beyond the first sample")
+            self.parent.messagearea.set_text("cannot reverse beyond the first sample")
 
     def prev_right_cb(self, event):
         """Navigates to the previous row, keeping column and subsample
@@ -686,11 +650,13 @@ class MovementTool(tk.Frame):
         """
         self.parent.configurationtool.update_config()
         # TODO: is there a reason this button doesn't reset corner to None?
-        self.parent.messagearea.setText("")
-        self.parent.microscope.yrow -= 1
-        if self.parent.microscope.yrow == -1: 
-            self.parent.microscope.yrow = self.parent.config.ny - 1
-        self.parent.microscope.mcoords()
+        self.parent.messagearea.set_text("")
+        newrow = self.parent.microscope.yrow - 1
+        if newrow == -1:
+            newrow = self.parent.config.ny - 1
+        self.parent.mcoords(newcol=self.parent.microscope.xcol, 
+                            newrow=newrow, 
+                            newsamp=self.parent.microscope.samp)
 
     def next_left_cb(self, event):
         """Navigates to the sample following the current one
@@ -700,21 +666,21 @@ class MovementTool(tk.Frame):
         """
         self.parent.configurationtool.update_config()
         self.corner = None
-        self.parent.messagearea.setText("")
+        self.parent.messagearea.set_text("")
         if self.parent.microscope.samp < (self.parent.config.samps - 1):
-            self.parent.microscope.samp += 1
-            self.parent.microscope.mcoords()
+            self.parent.mcoords(newcol=self.parent.microscope.xcol,
+                                newrow=self.parent.microscope.yrow,
+                                newsamp=self.parent.microscope.samp+1)
         elif self.parent.microscope.xcol < (self.parent.config.nx - 1):
-            self.parent.microscope.xcol += 1
-            self.parent.microscope.samp = 0
-            self.parent.microscope.mcoords()
+            self.parent.mcoords(newcol=self.parent.microscope.xcol+1,
+                                newrow=self.parent.microscope.yrow,
+                                newsamp=0)
         elif self.parent.microscope.yrow < (self.parent.config.ny - 1):
-            self.parent.microscope.yrow += 1
-            self.parent.microscope.xcol = 0
-            self.parent.microscope.samp = 0
-            self.parent.microscope.mcoords()
+            self.parent.mcoords(newcol=0,
+                                newrow=self.parent.microscope.yrow+1,
+                                newsamp=0)
         else:
-            self.parent.messagearea.setText("cannot advance beyond the last sample")
+            self.parent.messagearea.set_text("cannot advance beyond the last sample")
 
     def next_right_cb(self, event):
         """Navigates to the following row, keeping column and subsample
@@ -724,11 +690,13 @@ class MovementTool(tk.Frame):
         """
         self.parent.configurationtool.update_config()
         self.corner = None
-        self.parent.messagearea.setText("")
-        self.parent.microscope.yrow += 1
-        if self.parent.microscope.yrow == self.parent.config.ny: 
-            self.parent.microscope.yrow = 0
-        self.parent.microscope.mcoords()
+        self.parent.messagearea.set_text("")
+        newrow = self.parent.microscope.yrow + 1
+        if newrow == self.parent.config.ny: 
+            newrow = 0
+        self.parent.mcoords(newcol=self.parent.microscope.xcol,
+                            newrow=newrow,
+                            newsamp=self.parent.microscope.samp)
 
 class ImagingControls(tk.Frame):
     """Tool to control imaging
@@ -760,40 +728,10 @@ class ImagingControls(tk.Frame):
         self.runButton.bind("<Button-1>", self.run_cb)
         self.runButton.grid(sticky=fillcell, pady=(5,0))
     
-    def tdate(self):
+    def _tdate(self):
         """Returns the current date as a nice string
-        TODO: private?
         """
         return datetime.now().strftime('%h-%d-%Y_%I:%M%p').replace(" ","")
-
-    def _get_samp_name(self, row=None, col=None, samp=None):
-        """Returns the sample name of the current sample or given sample if specified
-
-        Args:
-            row: row of sample
-            col: column of sample
-            samp: subsample index
-
-        Throws:
-            Exception if only one argument is specified.
-        """
-        if row or col or samp:
-            assert((row is not None) and (col is not None) and (samp is not None))
-            yrow = row
-            xcol = col
-            samp_index = samp
-        else:
-            yrow = self.parent.microscope.yrow
-            xcol = self.parent.microscope.xcol
-            if self.parent.config.samps > 1:
-                samp_index = self.parent.microscope.samp
-            else:
-                samp_index = None
-        self.parent.configurationtool.update_config()
-        samp_name = self.parent.config.get_sample_name(yrow, xcol)
-        if self.parent.config.samps > 1 or samp:
-            samp_name += self.parent.config.get_subsample_id(samp_index)
-        return samp_name
 
     def _initialize_directories(self, snap=True):
         """Ensure all directories and subdirectories exist for images
@@ -822,7 +760,7 @@ class ImagingControls(tk.Frame):
                 os.mkdir(path1)
                 print('created directory \'snaps\' within the images/{}/{} directory'.format(sID, nroot))
         else:
-            path1 += '/' + self.tdate()
+            path1 += '/' + self._tdate()
             if not os.path.isdir(path1):
                 os.mkdir(path1)
                 print('created directory: {}'.format(path1))
@@ -839,11 +777,57 @@ class ImagingControls(tk.Frame):
         xcol = self.parent.microscope.xcol
         yrow = self.parent.microscope.yrow
         if self.parent.config.samps == 1: 
-            sname = path1 + '/' + self.parent.config.get_sample_name(yrow, xcol)+"_"+self.tdate()+'.jpg'
+            sname = path1 + '/' + self.parent.config.get_sample_name(yrow, xcol)+"_"+self._tdate()+'.jpg'
         else:
-            sname = path1 + '/' + self.parent.config.get_sample_name(yrow, xcol)+self.parent.config.get_subsample_id(self.parent.microscope.samp)+"_"+self.tdate()+'.jpg'
+            sname = path1 + '/' + self.parent.config.get_sample_name(yrow, xcol)+self.parent.config.get_subsample_id(self.parent.microscope.samp)+"_"+self._tdate()+'.jpg'
         self.parent.microscope.camera.capture(sname)
-        self.parent.messagearea.setText("image saved to {}".format(sname))
+        self.parent.messagearea.set_text("image saved to {}".format(sname))
+
+    def _take_zstack(self, basepath, samp_name, internaldirs=None):
+        """Takes z-stack images of current sample
+
+        Saves images to basepath/internaldirs/fname_[img num].jpg
+
+        Args:
+            basepath: root path for images
+            samp_name: base filename for image
+            internaldirs: internal directory paths from basepath, if needed
+
+        Returns:
+            String with the align_image_stack bash command
+        """
+        zrange = (self.parent.config.nimages-1)*self.parent.config.zstep
+        z = self.parent.microscope.mz-(1-self.parent.microscope.fracbelow)*zrange # bottom of the zrange (this is the top of the sample!)
+        line = 'align_image_stack -m -a OUT '
+        for imgnum in range(self.parent.config.nimages):
+            self.parent.microscope.grbl.rapid_move(z=z)
+            self.parent.microscope.wait_for_Idle()
+            fname = samp_name + "_" + str(imgnum) + ".jpg"
+            if internaldirs is not None:
+                internalpath = internaldirs + "/" + fname
+            else:
+                internalpath = fname
+            imgname = basepath + "/" + internalpath
+            sleep(self.parent.microscope.camera_delay) # slow things down to allow camera to settle down
+            self.parent.microscope.camera.capture(imgname)
+            line += internalpath
+            z += self.parent.config.zstep
+        line += (' \n') 
+        return line
+
+    def _append_to_stack_process(self, processf, samp_name, line):
+        """Creates image stack processing commands for given line and appends
+        to the given process file
+
+        Args:
+            processf: An open process file to write to
+            samp_name: the sample name associated with this image stack
+            line: the align_image_stack command for this image stack
+        """
+        processf.write('echo \'processing: '+samp_name+'\' \n')
+        processf.write(line)
+        processf.write('enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 --hard-mask --output='+samp_name+'.tif OUT*.tif \n')
+        processf.write('rm OUT*.tif \n')
 
     def snap_right_cb(self, event):
         """right mouse snap - takes a series of z-stacked pictures using nimages and Z-spacing parameters
@@ -852,33 +836,24 @@ class ImagingControls(tk.Frame):
             event: information on the event that triggered this
         """
         self.parent.configurationtool.update_config()
-        # TODO: move image taking to microscope?
-        samp_name = self._get_samp_name()
+        yrow = self.parent.microscope.yrow
+        xcol = self.parent.microscope.xcol
+        samp = self.parent.microscope.samp
+        if self.parent.config.samps > 1:
+            samp_name = self.parent.config.get_name_with_subsample(
+                yrow, xcol,samp)
+        else:
+            samp_name = self.parent.config.get_sample_name(yrow, xcol)
         path1 = self._initialize_directories()
         processf = open(path1 + '/' + samp_name + '_process_snap.com','w')
         processf.write('rm OUT*.tif \n')
-        zrange = (self.parent.config.nimages-1)*self.parent.config.zstep
-        z = self.parent.microscope.mz-(1-self.parent.microscope.fracbelow)*zrange # bottom of the zrange (this is the top of the sample!)
         z_sav = self.parent.microscope.mz
-        processf.write('echo \'processing: '+samp_name+'\' \n')
-        samp_name += '_' + self.tdate()
-        line = 'align_image_stack -m -a OUT '
-        for imgnum in range(self.parent.config.nimages):
-            self.parent.microscope.grbl.rapid_move(z=z)
-            self.parent.microscope.wait_for_Idle()
-            imgname = path1 + '/' + samp_name + '_' + str(imgnum) + '.jpg'
-            sleep(self.parent.microscope.camera_delay)#slow things down to allow camera to settle down
-            self.parent.microscope.camera.capture(imgname)
-            line += samp_name + '_' + str(imgnum) + '.jpg '
-            z += self.parent.config.zstep
-        line += (' \n') 
-        processf.write(line)
-        processf.write('enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 --hard-mask --output='+samp_name+'.tif OUT*.tif \n')
-        processf.write('rm OUT*.tif \n')
-        processf.close()
+        samp_name += '_' + self._tdate()
+        line = self._take_zstack(path1, samp_name)
+        self._append_to_stack_process(processf, samp_name, line)
         self.parent.microscope.grbl.rapid_move(z=z_sav) # return to original z 
         self.parent.microscope.wait_for_Idle()
-        self.parent.messagearea.setText("individual images:" + path1 + "\n" + 'source '+samp_name+'_process_snap.com to combine z-stack')
+        self.parent.messagearea.set_text("individual images:" + path1 + "\n" + 'source '+samp_name+'_process_snap.com to combine z-stack')
     
     def run_cb(self, event):
         """Runs a series of image shots
@@ -887,10 +862,7 @@ class ImagingControls(tk.Frame):
             event: information on the event that triggered this
         """
         self.parent.configurationtool.updatebtn_cb(event) # get data from the GUI window and save/update the configuration file... 
-        self.parent.microscope.yrow = 0
-        self.parent.microscope.xcol = 0
-        self.parent.microscope.samp = 0
-        self.parent.microscope.mcoords() #go to A1 
+        self.parent.mcoords(0,0,0) #go to A1
         imgpath = self._initialize_directories(snap=False)
         if not os.path.isdir(imgpath+'/rawimages'):
             os.mkdir(imgpath+'/rawimages')
@@ -901,35 +873,18 @@ class ImagingControls(tk.Frame):
             sleep(2) # let camera adapt to the light before collecting images
         processf = open(imgpath+'/process'+self.parent.config.nroot+'.com','w')
         processf.write('rm OUT*.tif \n')
-        zrange=(self.parent.config.nimages-1)*self.parent.config.zstep
         self.parent.microscope.running=True
-        self.parent.messagearea.setText("imaging samples...")
+        self.parent.messagearea.set_text("imaging samples...")
         if self.parent.microscope.disable_hard_limits: 
             self.parent.microscope.grbl.hard_limits(False)
             print('hard limits disabled')
         for yrow in range(self.parent.config.ny):
             for xcol in range(self.parent.config.nx):
                 for samp in range(self.parent.config.samps):
-                    self.parent.microscope.mcoords() # go to the expected position of the focussed sample 
-                    z = self.parent.microscope.mz-(1-self.parent.microscope.fracbelow)*zrange # bottom of the zrange (this is the top of the sample!)
-                    samp_name = self._get_samp_name(yrow, xcol, samp)
-                    processf.write('echo \'processing: '+samp_name+'\' \n')
-                    line='align_image_stack -m -a OUT '
-                    # TODO: i think this is reused in snap function
-                    for imgnum in range(self.parent.config.nimages):
-                        self.parent.microscope.rapid_move(z=z)
-                        self.parent.microscope.wait_for_Idle()
-                        sleep(0.2)
-                        # take image
-                        imgname = imgpath+'/rawimages/'+samp_name+'_'+str(imgnum)+'.jpg'
-                        sleep(self.parent.microscope.camera_delay)#slow things down to allow camera to settle down
-                        self.parent.microscope.camera.capture(imgname)
-                        line+='rawimages/'+samp_name+'_'+str(imgnum)+'.jpg '
-                        z+=self.parent.config.zstep
-                    line+=(' \n') 
-                    processf.write(line)
-                    processf.write('enfuse --exposure-weight=0 --saturation-weight=0 --contrast-weight=1 --hard-mask --output='+samp_name+'.tif OUT*.tif \n')
-                    processf.write('rm OUT*.tif \n')
+                    self.parent.mcoords(xcol, yrow, samp) # go to the expected position of the focussed sample 
+                    samp_name = self.parent.config.get_name_with_subsample(yrow, xcol, samp)
+                    line = self._take_zstack(imgpath, samp_name, "rawimages")
+                    self._append_to_stack_process(processf, samp_name, line)
                     if self.parent.microscope.stopit: 
                         break
                 if self.parent.microscope.stopit: 
@@ -1048,37 +1003,52 @@ class ConfigurationTool(tk.Frame):
             event: information on the event that triggered this
         """
         if not self.parent.config:
-            self.parent.messagearea.setText("There is not existing configuration to update. Nothing written")
+            self.parent.messagearea.set_text("There is not existing configuration to update. Nothing written")
             return
 
         tmp_fname = str(self.filee.get())
         if " " in tmp_fname:
-            self.parent.messagearea.setText("file name cannot contain spaces. Nothing written.")
+            self.parent.messagearea.set_text("file name cannot contain spaces. Nothing written.")
             self.filee.delete(0,tk.END)
             self.filee.insert(0,"")
             self.update()
         else:
-            self.update_config()
-            self.parent.config.write()
-            self.parent.messagearea.setText("parameters saved to " + tmp_fname)
+            if self.update_config():
+                self.parent.config.write()
+                self.parent.messagearea.set_text("parameters saved to " + tmp_fname)
 
     def update_config(self):
         """Updates all config values to current values held in text fields
+
+        Returns:
+            Boolean indicating whether update operation was successful
         """
         if not self.parent.config:
-            self.parent.messagearea.setText("There is not existing configuration to update. Nothing written")
-            return
+            self.parent.messagearea.set_text("There is not existing configuration to update. Nothing written")
+            return False
+
+        nx = int(self.nxe.get())
+        ny = int(self.nye.get())
+        samps = int(self.sampse.get())
+
+        if nx <=1 or ny <= 1:
+            self.parent.messagearea.set_text("NX and NY must be greater than 1")
+            return False
+
+        if samps < 1:
+            self.parent.messagearea.set_text("Samps must be greater than 0")
+            return False
         
         self.parent.config.fname = str(self.filee.get())
-        self.parent.config.nx = int(self.nxe.get())
-        self.parent.config.ny = int(self.nye.get())
-        self.parent.config.samps = int(self.sampse.get())
+        self.parent.config.nx = nx
+        self.parent.config.ny = ny
+        self.parent.config.samps = samps
         self.parent.config.nimages = int(self.nimge.get())
         self.parent.config.zstep = float(self.zspe.get())
         self.parent.config.sID = str(self.sIDe.get())
         self.parent.config.nroot = str(self.pIDe.get())
-        self.parent.messagearea.setText("parameter values up to date")
-
+        self.parent.messagearea.set_text("parameter values up to date")
+        return True
 
     def readbtn_cb(self, event):
         """Reads config values from file
@@ -1199,10 +1169,12 @@ class GUI(tk.Frame):
         try:
             self.config = Config(fname)
         except ValueError:
-            print("Configuration file does not exist")
+            print("Configuration file does not exist. Creating one...")
+            Config.write_default_config("AMi.config")
+            self.config = Config("AMi.config")
         except:
             Config.print_help()
-            if fname=='AMi.config': sys.exit() #TODO: what does this do?, I think this closes the program if the configuration file does not exist in the directory??
+            sys.exit() # invalid configuration format. Quit program.
 
     def mcoords(self, newcol, newrow, newsamp=0):
         """Communicates moves to the microscope and updates GUI window to reflect
@@ -1225,7 +1197,7 @@ class GUI(tk.Frame):
             position_str, newrow*self.config.nx + newcol+1)
         message += "machine coordinates: {}, {}, {}".format(
             round(mx, 3), round(my, 3), round(mz, 3))
-        self.messagearea.setText(message)
+        self.messagearea.set_text(message)
 
     def close(self):
         """Performs closing procedures
@@ -1265,7 +1237,7 @@ def main():
     # for selfresizing: https://stackoverflow.com/questions/7591294/how-to-create-a-self-resizing-grid-of-buttons-in-tkinter
     frame = GUI(root, background="white")
     frame.pack(side="top", fill="both", expand=True)
-    frame.messagearea.setText("The corner samples must be centered and in focus before imaging. Use blue buttons to check alignment, and XYZ windows to make corrections. Good luck!!")
+    frame.messagearea.set_text("The corner samples must be centered and in focus before imaging. Use blue buttons to check alignment, and XYZ windows to make corrections. Good luck!!")
 
     root.update()
     root.geometry("{}x{}+{}+{}".format(root.winfo_width(), 

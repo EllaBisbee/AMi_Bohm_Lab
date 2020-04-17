@@ -91,6 +91,25 @@ class Config():
         print(' AMi_sample         # sample name (no spaces)')
         print(' AB_xs2             # plate name (no spaces)')
 
+    @staticmethod
+    def write_default_config(fname):
+        """Creates a default configuration file
+
+        Args:
+            fname: filename to save to
+        """
+        with open(fname, "w") as f:
+            f.write(str('%6d%6d%6d     # number of positons on x and y, then the number of samples at each position\n'%(12,8,1)))
+            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the top left sample\n'%(0.,0.,0.)))
+            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the top right sample\n'%(0.,0.,0.)))
+            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the bottom left sample\n'%(0.,0.,0.)))
+            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the bottom right sample\n'%(0.,0.,0.)))
+            f.write(str('%9.4f%9.4f  # fractional offsets of sub-sample \n'%(0.,0.)))
+            f.write(str('%9.3f # zstep - the spacing in z between images\n'%(0.3)))
+            f.write(str('%6d     # nimages - the number of images of each sample\n'%(3)))
+            f.write('AMi_sample     # sample name\n')
+            f.write('AB_xs2         # plate name\n')
+
     def write(self):
         """Writes to the internal configuration to the stored file name.
         """
@@ -154,11 +173,16 @@ class Config():
 
         Args:
             letter: A single letter representing the subsample
+
+        Throws:
+            Exception if given letter is out of bounds
         """
         if letter in self._Ualphabet[0:self.samps]:
             return self._Ualphabet.find(letter)
-        else:
+        elif letter in self._Lalphabet[0:self.samps]:
             return self._Lalphabet.find(letter)
+        else:
+            raise Exception("invalid subsample identification")
 
     def get_sample_name(self, row, col):
         """Returns the sample name (excluding subsample).
@@ -175,12 +199,28 @@ class Config():
     def get_row_col(self, name):
         """Returns the row and column indices of a given sample name
 
+        Sample name must be an integer or in letter_number format
+        E.g. 5 or A1
+
         Args:
             name: the sample name
-        """
-        rowletter = name[0]
-        colnum = int(name[1:])
-        return self._alphabet.index(rowletter), colnum - 1
+
+        Throws:
+            Exception if name is invalid
+        """ 
+        if name[0].isdigit(): # name is in integer format
+            numb = int(name)
+            numb -= 1
+            assert numb < self.nx * self.ny and numb >= 0
+            row = int(numb / self.nx)
+            col = numb - (row * self.nx)
+            return row, col
+        else: # name is in letter_number format
+            rowletter = name[0].upper()
+            colnum = int(name[1:])
+            row = self._alphabet.index(rowletter)
+            col = colnum - 1
+            return row, col
 
     def get_name_with_subsample(self, row, col, samp):
         """Returns the sample name with the subsample id

@@ -105,7 +105,7 @@ class Microscope():
         self.grbl.run_homing_cycle() # tell grbl to find zero
         self.wx, self.wy, self.wz = self.grbl.get_work_position()
         if self.wx == -199.0:
-            # ensures that zero is zero and not -199.0, -199.0, -199.0 
+            # ensures that zero is zero and not -199.0, -199.0, -199.0
             self.grbl.set_coordinate_system(1, self.wx, self.wy, self.wz)
         self.grbl.coolant_control(flood=True) # set pin A3 high -used later to detect end of movement 
         print(' You\'ll probably want to click VIEW and turn on some lights at this point. \n Then you may want to check the alignment of the four corner samples')
@@ -214,13 +214,31 @@ class Microscope():
         """
         print("called mcoords with yrow,xcol,samp:",self.yrow,self.xcol,self.samp)
         self.wait_for_Idle()
-        #TODO: figure out why subtracting 1 from config.nx, and if it's correct (from Andrew)
-        x = self.xcol / float(self.config.nx - 1) + self.config.samp_coord[self.samp][0]
-        y = self.yrow / float(self.config.ny - 1) + self.config.samp_coord[self.samp][1]
-        self.mx = self.config.br[0] * x * y + self.config.bl[0] * (1.-x) * y + self.config.tr[0] * x * (1.-y) + self.config.tl[0] * (1.-x) * (1.-y)
-        self.my = self.config.br[1] * x * y + self.config.bl[1] * (1.-x) * y + self.config.tr[1] * x * (1.-y) + self.config.tl[1] * (1.-x) * (1.-y)
-        self.mz = self.config.br[2] * x * y + self.config.bl[2] * (1.-x) * y + self.config.tr[2] * x * (1.-y) + self.config.tl[2] * (1.-x) * (1.-y)
+        self.mx, self.my, self.mz = self.calculate_machine_position(self.xcol, self.yrow, self.samp)
         print('mx,my,mz',self.mx,self.my,self.mz) # TODO: does this need to be here?
         self.grbl.rapid_move(self.mx, self.my, self.mz)
         self.wait_for_Idle()
         return self.mx, self.my, self.mz
+
+    def calculate_machine_position(self, col, row, samp):
+        """Returns the x,y,z machine positions based on the given sample coords
+
+        Uses bilinear interpolation to calculate the x,y,z machine poisition
+        for the given sample coordinates.
+        https://en.wikipedia.org/wiki/Bilinear_interpolation
+
+        Returns:
+            The [x,y,z] machine positions
+        """
+        # Pull in necessary variables
+        br, bl, tr, tl = self.config.br, self.config.bl, self.config.tr, self.config.tl
+
+        # Calculate fractional location of sample 
+        x = col / float(self.config.nx - 1) + self.config.samp_coord[self.samp][0]
+        y = row / float(self.config.ny - 1) + self.config.samp_coord[self.samp][1]
+
+        # Interpolate
+        mx = br[0]*x*y + bl[0]*(1.-x)*y + tr[0]*x*(1.-y) + tl[0]*(1.-x)*(1.-y)
+        my = br[1]*x*y + bl[1]*(1.-x)*y + tr[1]*x*(1.-y) + tl[1]*(1.-x)*(1.-y)
+        mz = br[2]*x*y + bl[2]*(1.-x)*y + tr[2]*x*(1.-y) + tl[2]*(1.-x)*(1.-y)
+        return mx, my, mz
