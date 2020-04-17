@@ -878,19 +878,16 @@ class ImagingControls(tk.Frame):
         if self.parent.microscope.disable_hard_limits: 
             self.parent.microscope.grbl.hard_limits(False)
             print('hard limits disabled')
-        for yrow in range(self.parent.config.ny):
-            for xcol in range(self.parent.config.nx):
-                for samp in range(self.parent.config.samps):
-                    self.parent.mcoords(xcol, yrow, samp) # go to the expected position of the focussed sample 
-                    samp_name = self.parent.config.get_name_with_subsample(yrow, xcol, samp)
-                    line = self._take_zstack(imgpath, samp_name, "rawimages")
-                    self._append_to_stack_process(processf, samp_name, line)
-                    if self.parent.microscope.stopit: 
-                        break
+        for well in range(self.parent.config.ny * self.parent.config.nx):
+            yrow, xcol = self.parent.config.get_row_col(well)
+            for samp in range(self.parent.config.samps):
                 if self.parent.microscope.stopit: 
                     break
-            if self.parent.microscope.stopit: 
-                break
+                self.parent.mcoords(xcol, yrow, samp) # go to sample
+                samp_name = self.parent.config.get_name_with_subsample(
+                    yrow, xcol, samp)
+                line = self._take_zstack(imgpath, samp_name, "rawimages")
+                self._append_to_stack_process(processf, samp_name, line)
         self.parent.microscope.running = False
         processf.close()
         self.parent.microscope.switch_camera_preview() # turn off the preview so the monitor can go black when the pi sleeps
