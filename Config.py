@@ -79,13 +79,16 @@ class Config():
     def print_help():
         """Static method to print the appropriate format of the file.
         """
-        print(' The format of the configuration file was not right. It should look something like this:')
-        print(' 12   8    1        # number of positions along x and y and on the plate then number of samples at each position') 
+        print(' The format of the configuration file was not right. ' +
+              'It should look something like this:')
+        print(' 12   8    1        # number of positions along x and y and ' +
+              'on the plate then number of samples at each position') 
         print(' 134.2  29.3  7.5   # coordinates of the top left drop')
         print(' 35.2  28.7  7.3    # coordinates of the top right drop')
         print(' 133.5  92.9  7.1   # coordinates of the bottom left drop')
         print(' 35.0  91.9  7.0    # coordinates of the bottom right drop')
-        print(' 0.    0.           # offsets for each sample (first sample is always 0. 0.)')
+        print(' 0.    0.           # offsets for each sample ' +
+              '(first sample is always 0. 0.)')
         print(' 0.3                # image spacing in z')
         print(' 4                  # number of images per drop')
         print(' AMi_sample         # sample name (no spaces)')
@@ -99,14 +102,23 @@ class Config():
             fname: filename to save to
         """
         with open(fname, "w") as f:
-            f.write(str('%6d%6d%6d     # number of positons on x and y, then the number of samples at each position\n'%(12,8,1)))
-            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the top left sample\n'%(0.,0.,0.)))
-            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the top right sample\n'%(0.,0.,0.)))
-            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the bottom left sample\n'%(0.,0.,0.)))
-            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the bottom right sample\n'%(0.,0.,0.)))
-            f.write(str('%9.4f%9.4f  # fractional offsets of sub-sample \n'%(0.,0.)))
-            f.write(str('%9.3f # zstep - the spacing in z between images\n'%(0.3)))
-            f.write(str('%6d     # nimages - the number of images of each sample\n'%(3)))
+            f.write(str('%6d%6d%6d     '%(12,8,1) +
+                    '# number of positons on x and y, ' +
+                    'then the number of samples at each position\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(0.,0.,0.) +
+                    '# coordinates of the top left sample\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(0.,0.,0.) +
+                    '# coordinates of the top right sample\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(0.,0.,0.) +
+                    '# coordinates of the bottom left sample\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(0.,0.,0.) +
+                    '# coordinates of the bottom right sample\n'))
+            f.write(str('%9.4f%9.4f  '%(0.,0.) +
+                    '# fractional offsets of sub-sample \n'))
+            f.write(str('%9.3f '%(0.3) +
+                    '# zstep - the spacing in z between images\n'))
+            f.write(str('%6d     '%(3) +
+                    '# nimages - the number of images of each sample\n'))
             f.write('AMi_sample     # sample name\n')
             f.write('AB_xs2         # plate name\n')
 
@@ -114,11 +126,17 @@ class Config():
         """Writes to the internal configuration to the stored file name.
         """
         with open(self.fname, "w") as f:
-            f.write(str('%6d%6d%6d     # number of positons on x and y, then the number of samples at each position\n'%(self.nx,self.ny,self.samps)))
-            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the top left sample\n'%(self.tl[0],self.tl[1],self.tl[2])))
-            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the top right sample\n'%(self.tr[0],self.tr[1],self.tr[2])))
-            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the bottom left sample\n'%(self.bl[0],self.bl[1],self.bl[2])))
-            f.write(str('%9.3f%9.3f%9.3f  # coordinates of the bottom right sample\n'%(self.br[0],self.br[1],self.br[2])))
+            f.write(str('%6d%6d%6d     '%(self.nx,self.ny,self.samps) +
+                '# number of positons on x and y, then the number of ' +
+                'samples at each position\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(self.tl[0],self.tl[1],self.tl[2]) +
+                    '# coordinates of the top left sample\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(self.tr[0],self.tr[1],self.tr[2]) +
+                    '# coordinates of the top right sample\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(self.bl[0],self.bl[1],self.bl[2]) +
+                    '# coordinates of the bottom left sample\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(self.br[0],self.br[1],self.br[2]) +
+                    '# coordinates of the bottom right sample\n'))
             for i in range(self.samps):
                 try: 
                     _=self.samp_coord[i]
@@ -126,9 +144,12 @@ class Config():
                     self.samp_coord.append([0., 0.])
                 ta=float(self.samp_coord[i][0])
                 tb=float(self.samp_coord[i][1])
-                f.write(str('%9.4f%9.4f  # fractional offsets of sub-sample \n'%(ta,tb)))
-            f.write(str('%9.3f # zstep - the spacing in z between images\n'%(self.zstep)))
-            f.write(str('%6d     # nimages - the number of images of each sample\n'%(self.nimages)))
+                f.write(str('%9.4f%9.4f  '%(ta,tb) +
+                        '# fractional offsets of sub-sample \n'))
+            f.write(str('%9.3f '%(self.zstep) +
+                    '# zstep - the spacing in z between images\n'))
+            f.write(str('%6d     '%(self.nimages) +
+                    '# nimages - the number of images of each sample\n'))
             f.write(self.sID+'     # sample name\n')
             f.write(self.nroot+'     # plate name\n')
 
@@ -145,11 +166,14 @@ class Config():
                 self.tr = np.array(self._next_config(f, float))
                 self.bl = np.array(self._next_config(f, float))
                 self.br = np.array(self._next_config(f, float))
-                self.samp_coord = [self._next_config(f, float) for _ in range(self.samps)]
+                self.samp_coord = [
+                    self._next_config(f, float) for _ in range(self.samps)]
                 self.zstep = self._next_config(f, float)[0]
                 self.nimages = self._next_config(f, int)[0]
-                self.sID = self._next_config(f, str)[0].replace("\n", "").replace(" ", "")
-                self.nroot = self._next_config(f, str)[0].replace("\n", "").replace(" ", "")
+                self.sID = self._next_config(
+                    f, str)[0].replace("\n", "").replace(" ", "")
+                self.nroot = self._next_config(
+                    f, str)[0].replace("\n", "").replace(" ", "")
                 self._alphabet=Ualphabet[0:self.ny]+Lalphabet[0:self.ny]
         except:
             raise Exception("invalid file format")
@@ -233,8 +257,8 @@ class Config():
         return self.get_sample_name(row, col) + self.get_subsample_id(samp)
 
     def is_valid_sample_name(self, name):
-        """Checks if the given name is a valid sample name in format LETTER then NUMBER
-        e.g. A1, B4
+        """Checks if the given name is a valid sample name in format 
+        LETTER then NUMBER (e.g. A1, B4)
 
         Args:
             name: the sample name

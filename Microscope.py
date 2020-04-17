@@ -107,9 +107,13 @@ class Microscope():
         if self.wx == -199.0:
             # ensures that zero is zero and not -199.0, -199.0, -199.0
             self.grbl.set_coordinate_system(1, self.wx, self.wy, self.wz)
-        self.grbl.coolant_control(flood=True) # set pin A3 high -used later to detect end of movement 
-        print(' You\'ll probably want to click VIEW and turn on some lights at this point. \n Then you may want to check the alignment of the four corner samples')
-        self.grbl.kill_alarm_lock() # unlock so spindle power can engage for light2 
+        # set pin A3 high -used later to detect end of movement 
+        self.grbl.coolant_control(flood=True) 
+        print(" You\'ll probably want to click VIEW and turn on some lights " +
+              "at this point. \n Then you may want to check the alignment of " +
+              "the four corner samples")
+        # unlock so spindle power can engage for light2 
+        self.grbl.kill_alarm_lock() 
         self.grbl.set_spindle_speed(1000) # set max spindle volocity
 
     def get_machine_position(self):
@@ -130,7 +134,8 @@ class Microscope():
             self.camera.stop_preview()
             self.viewing = False
         else:
-            self.camera.start_preview(fullscreen=False, window=(0,-76,1597,1200)) # TODO: add dynamic window calculation
+            self.camera.start_preview(
+                fullscreen=False, window=(0,-76,1597,1200)) # TODO: add dynamic window calculation
             self.viewing = True
 
     def _in_dev_machine(self):
@@ -160,7 +165,7 @@ class Microscope():
         """
         if self._in_dev_machine:
             sleep(1)
-            return "<Idle,MPos:0.000,0.000,0.000,WPos:0.000,0.000,0.000>".encode('utf-8')
+            return "<Idle,MPos:0.0,0.0,0.0,WPos:0.0,0.0,0.0>".encode('utf-8')
         else:
             return self.grbl._wait_for_response()
 
@@ -195,12 +200,12 @@ class Microscope():
         if self.light2_stat:
             GPIO.output(self.light2, GPIO.LOW)
             self.light2_stat = False
-            self.grbl.spindle_control(running=False) # turn off the spindle power
+            self.grbl.spindle_control(running=False) # turn off spindle power
             print("light2 turned off")
         else:
             GPIO.output(self.light2, GPIO.HIGH)
             self.light2_stat = True
-            self.grbl.spindle_control(clockwise=True) # turn on the spindle power
+            self.grbl.spindle_control(clockwise=True) # turn on spindle power
             print("light2 turned on")
 
     def mcoords(self):
@@ -212,9 +217,11 @@ class Microscope():
         Returns:
             The new mx, my, mz machine positions
         """
-        print("called mcoords with yrow,xcol,samp:",self.yrow,self.xcol,self.samp)
+        print("called mcoords with yrow,xcol,samp:",
+              self.yrow,self.xcol,self.samp)
         self.wait_for_Idle()
-        self.mx, self.my, self.mz = self.calculate_machine_position(self.xcol, self.yrow, self.samp)
+        self.mx, self.my, self.mz = self.calculate_machine_position(
+            self.xcol, self.yrow, self.samp)
         print('mx,my,mz',self.mx,self.my,self.mz) # TODO: does this need to be here?
         self.grbl.rapid_move(self.mx, self.my, self.mz)
         self.wait_for_Idle()
@@ -231,11 +238,14 @@ class Microscope():
             The [x,y,z] machine positions
         """
         # Pull in necessary variables
-        br, bl, tr, tl = self.config.br, self.config.bl, self.config.tr, self.config.tl
+        br, bl = self.config.br, self.config.bl
+        tr, tl = self.config.tr, self.config.tl
 
         # Calculate fractional location of sample 
-        x = col / float(self.config.nx - 1) + self.config.samp_coord[self.samp][0]
-        y = row / float(self.config.ny - 1) + self.config.samp_coord[self.samp][1]
+        x = (col / float(self.config.nx - 1) + 
+            self.config.samp_coord[self.samp][0])
+        y = (row / float(self.config.ny - 1) + 
+            self.config.samp_coord[self.samp][1])
 
         # Interpolate
         mx = br[0]*x*y + bl[0]*(1.-x)*y + tr[0]*x*(1.-y) + tl[0]*(1.-x)*(1.-y)
