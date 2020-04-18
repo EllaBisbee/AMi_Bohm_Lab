@@ -6,11 +6,12 @@ GUI.
 
 import tkinter as tk
 from tkinter import ttk
-import sys, os
-from dotenv import load_dotenv
+import sys
+import os
 from datetime import datetime
 from time import sleep
 from shutil import copyfile
+from dotenv import load_dotenv
 import numpy as np
 
 from Config import Config
@@ -29,19 +30,18 @@ class MessageArea(tk.Frame):
     def __init__(self, parent, text):
         """Initializes the message area.
         """
-        tk.Frame.__init__(self, parent, highlightbackground="black", 
-                                        highlightthickness=1,
-                                        background=parent['bg'])
+        tk.Frame.__init__(self, parent, highlightbackground="black",
+                          highlightthickness=1, background=parent['bg'])
         self.parent = parent
-        self._text = tk.StringVar() 
+        self._text = tk.StringVar()
         self._text.set(text)
-        self._label = ttk.Label(self, textvariable=self._text, 
-                                background=parent['bg']) 
+        self._label = ttk.Label(self, textvariable=self._text,
+                                background=parent['bg'])
         self._label.config(wraplength=self.parent.winfo_width())
         self._label.bind("<Configure>", self._onresize)
         self._label.pack()
 
-    def _onresize(self, event):
+    def _onresize(self, _event):
         """Callback for when the internal label is resized.
 
         Args:
@@ -49,13 +49,13 @@ class MessageArea(tk.Frame):
         """
         self._label.config(wraplength=self.parent.winfo_width())
 
-    def set_text(self, t):
+    def set_text(self, text):
         """Changes the text displayed.
 
         Args:
-            t: String containing the new text
+            text: String containing the new text
         """
-        self._text.set(t)
+        self._text.set(text)
 
 class TranslationTool(tk.Frame):
     """A tool used to move the CNC tray.
@@ -66,20 +66,20 @@ class TranslationTool(tk.Frame):
         xysetting: the canvas for controlling the xy location
     """
     def __init__(self, parent, *args, **kwargs):
-        tk.Frame.__init__(self, parent, pady=1, highlightthickness=0, 
+        tk.Frame.__init__(self, parent, pady=1, highlightthickness=0,
                           background=parent['bg'], *args, **kwargs)
         self.parent = parent
         self._gx = 0
         self._gy = 0
 
         background = "lightgrey"
-        self.zsetting = tk.Canvas(self, width=1, height=1, 
+        self.zsetting = tk.Canvas(self, width=1, height=1,
                                   highlightthickness=0, bg=background)
         self.zsetting.bind("<Motion>", self.motion)
         self.zsetting.bind("<Button-1>", self.left_click_z)
         self.zsetting.pack(side=tk.LEFT)
 
-        self.xysetting = tk.Canvas(self, width=1, height=1, 
+        self.xysetting = tk.Canvas(self, width=1, height=1,
                                    highlightthickness=0, bg=background)
         self.xysetting.bind("<Motion>", self.motion)
         self.xysetting.bind("<Button-1>", self.left_click_xy)
@@ -87,7 +87,7 @@ class TranslationTool(tk.Frame):
 
         self.bind("<Configure>", self._on_resize)
 
-    def _on_resize(self, event):
+    def _on_resize(self, _event):
         """Callback function for when this widget's window is resized.
 
         Args:
@@ -103,12 +103,12 @@ class TranslationTool(tk.Frame):
         zwidth = self.parent.winfo_width() * 0.10
         zheight = xywidth
         guidespacing = 40 # spacing between lines and ovals
-        linescuttoff = 10 # cutoff on either side (horizontal) of zsetting 
+        linescuttoff = 10 # cutoff on either side (horizontal) of zsetting
                           # guide lines
         guidecolor = "red" # color of guides
         fontname = "Helvetia" # label font name
         fontsize = 12 # label font size
-        fonteffect = "bold" # label font effect 
+        fonteffect = "bold" # label font effect
         labelfont = (fontname, fontsize, fonteffect)
         labelcolor = "darkblue"
         bordercolor = "darkblue"
@@ -120,17 +120,17 @@ class TranslationTool(tk.Frame):
         bordermargin = borderwidth - 1
         # z-setting outline
         self.zsetting.create_rectangle(
-            bordermargin, bordermargin, zwidth - bordermargin, 
+            bordermargin, bordermargin, zwidth - bordermargin,
             zheight - bordermargin, outline=bordercolor, width=borderwidth)
         # z-setting center line
         self.zsetting.create_line(
-            bordermargin, zheight/2 - borderwidth/2, zwidth - bordermargin, 
+            bordermargin, zheight/2 - borderwidth/2, zwidth - bordermargin,
             zheight/2 - borderwidth/2, width=borderwidth)
         # z guide lines
-        for i in range(1, int(zheight/2/guidespacing) + 1): 
+        for i in range(1, int(zheight/2/guidespacing) + 1):
             self.zsetting.create_line(
                 linescuttoff, zheight/2 - i * guidespacing,
-                zwidth - linescuttoff, zheight/2 - i * guidespacing, 
+                zwidth - linescuttoff, zheight/2 - i * guidespacing,
                 fill=guidecolor)
             self.zsetting.create_line(
                 linescuttoff, zheight/2 + i * guidespacing,
@@ -140,7 +140,7 @@ class TranslationTool(tk.Frame):
                                   text="+Z", anchor=tk.N)
         self.zsetting.create_text(zwidth/2, zheight, fill=labelcolor,
                                   font=labelfont, text="-Z", anchor=tk.S)
-    
+
         # Draw xy-setting
         self.xysetting.delete("all")
         self.xysetting.config(width=xywidth, height=xyheight)
@@ -151,7 +151,7 @@ class TranslationTool(tk.Frame):
         # xy vertical
         self.xysetting.create_line(
             xywidth/2 - borderwidth/2, bordermargin, xywidth/2 - borderwidth/2,
-            xyheight - bordermargin, width=borderwidth) 
+            xyheight - bordermargin, width=borderwidth)
         # xy horizontal
         self.xysetting.create_line(
             bordermargin, xyheight/2 - borderwidth/2, xywidth - bordermargin,
@@ -161,16 +161,16 @@ class TranslationTool(tk.Frame):
                 xywidth/2 - i * guidespacing, xyheight/2 - i * guidespacing,
                 xywidth/2 + i * guidespacing, xyheight/2 + i * guidespacing,
                 outline=guidecolor)
-        self.xysetting.create_text(xywidth/2, 0, fill=labelcolor, 
+        self.xysetting.create_text(xywidth/2, 0, fill=labelcolor,
                                    font=labelfont, text="+Y", anchor=tk.NW)
-        self.xysetting.create_text(xywidth/2, xyheight, fill=labelcolor, 
+        self.xysetting.create_text(xywidth/2, xyheight, fill=labelcolor,
                                    font=labelfont, text="-Y", anchor=tk.SW)
         self.xysetting.create_text(borderwidth, xyheight/2, fill=labelcolor,
                                    font=labelfont, text="-X", anchor=tk.SW)
         self.xysetting.create_text(
-            xywidth - borderwidth, xyheight/2, fill=labelcolor,font=labelfont, 
+            xywidth - borderwidth, xyheight/2, fill=labelcolor, font=labelfont,
             text="+X", anchor=tk.SE)
-    
+
     def motion(self, event):
         """Callback that records the last clicked area within the tool.
 
@@ -179,24 +179,25 @@ class TranslationTool(tk.Frame):
         """
         self._gx, self._gy = event.x, event.y
 
-    def left_click_z(self, event):
+    def left_click_z(self, _event):
         """Callback that triggers a z-move for the machine
 
         Args:
             event: information for the event that triggered this
         """
-        print('left_click gx,gy,xcol,yrow',self._gx, self._gy, 
+        print('left_click gx,gy,xcol,yrow', self._gx, self._gy,
               self.parent.microscope.xcol, self.parent.microscope.yrow)
         midpoint = self.zsetting.winfo_height() / 2
         rz = midpoint - self._gy
         mzsav = self.parent.microscope.mz
         self.parent.microscope.mz += 0.0001 * (abs(rz)**2.2) * np.sign(rz)
-        if (self.parent.microscope.mz > 0. and 
-           self.parent.microscope.mz < self.parent.microscope.zmax):
+        mz = self.parent.microscope.mz
+        zmax = self.parent.microscope.zmax
+        if mz > 0. and mz < zmax:
             self.parent.microscope.grbl.rapid_move(z=self.parent.microscope.mz)
-            message = ('current Z: '+str(round(self.parent.microscope.mz,3))+
-                      ' change: '+
-                      str(round((self.parent.microscope.mz-mzsav),3)))
+            message = ('current Z: '+str(round(self.parent.microscope.mz, 3))+
+                       ' change: '+
+                       str(round((self.parent.microscope.mz-mzsav), 3)))
             if self.parent.calibrationtool.corner:
                 self.parent.messagearea.set_text(message)
             else:
@@ -207,13 +208,13 @@ class TranslationTool(tk.Frame):
                 "that move would take you out of bounds")
             self.parent.microscope.mz = mzsav
 
-    def left_click_xy(self, event):
+    def left_click_xy(self, _event):
         """Callback that triggers a xy-move for the machine
 
         Args:
             event: information for the event that triggered this
         """
-        print('left_click gx,gy,xcol,yrow',self._gx, self._gy, 
+        print('left_click gx,gy,xcol,yrow', self._gx, self._gy,
               self.parent.microscope.xcol, self.parent.microscope.yrow)
         x_mid = self.xysetting.winfo_width() / 2
         y_mid = self.xysetting.winfo_height() / 2
@@ -223,25 +224,25 @@ class TranslationTool(tk.Frame):
         mysav = self.parent.microscope.my
         self.parent.microscope.mx += 0.0001*(abs(rx)**2.2)*np.sign(rx)
         self.parent.microscope.my += 0.0001*(abs(ry)**2.2)*np.sign(ry)
-        if (self.parent.microscope.mx>0. and self.parent.microscope.my>0. and 
-           self.parent.microscope.mx < self.parent.microscope.xmax and 
-           self.parent.microscope.my < self.parent.microscope.ymax):
+        mx, my = self.parent.microscope.mx, self.parent.microscope.my
+        xmax, ymax = self.parent.microscope.xmax, self.parent.microscope.ymax
+        if mx > 0. and my > 0. and mx < xmax and my < ymax:
             self.parent.microscope.grbl.rapid_move(
                 x=self.parent.microscope.mx,
                 y=self.parent.microscope.my)
             if self.parent.calibrationtool.corner:
                 self.parent.messagearea.set_text(
                     'current X,Y: {}, {}'.format(
-                        str(round(self.parent.microscope.mx,3)), 
-                        str(round((self.parent.microscope.my),3))))
+                        str(round(self.parent.microscope.mx, 3)),
+                        str(round((self.parent.microscope.my), 3))))
             else:
                 self.parent.messagearea.set_text('')
             print('current X: {} change: {}'.format(
-                str(round(self.parent.microscope.mx,3)),
-                str(round((self.parent.microscope.mx-mxsav),3))))
+                str(round(self.parent.microscope.mx, 3)),
+                str(round((self.parent.microscope.mx-mxsav), 3))))
             print('current Y: {} change: {}'.format(
-                str(round(self.parent.microscope.my,3)),
-                str(round((self.parent.microscope.my-mysav),3))))
+                str(round(self.parent.microscope.my, 3)),
+                str(round((self.parent.microscope.my-mysav), 3))))
         else:
             self.parent.messagearea.set_text(
                 "that move would take you out of bounds")
@@ -254,15 +255,15 @@ class CalibrationTool(tk.Frame):
     Attributes:
         parent: actual parent is a container so this is the container's parent
         corner: the corner OR subsample index currently calibrating
-        tlButton: the button to select the top left corner
-        trButton: the button to select the top right corner
-        blButton: the button to select the bottom left corner
-        brButton: the button to select the bottom right corner
-        setButton: the button to store the calibration
+        tl_btn: the button to select the top left corner
+        tr_btn: the button to select the top right corner
+        bl_btn: the button to select the bottom left corner
+        br_btn: the button to select the bottom right corner
+        set_btn: the button to store the calibration
     """
     def __init__(self, parent, *args, **kwargs):
-        tk.Frame.__init__(self, parent, highlightbackground="black", 
-                          highlightthickness=3, background="lightgrey", 
+        tk.Frame.__init__(self, parent, highlightbackground="black",
+                          highlightthickness=3, background="lightgrey",
                           *args, **kwargs)
         self.parent = parent.parent
         self.corner = None
@@ -273,49 +274,49 @@ class CalibrationTool(tk.Frame):
         btnpad = 1
         btnwidth = 0
         style = ttk.Style()
-        style.configure("Calibration.TButton", font="Helvetia 12", 
+        style.configure("Calibration.TButton", font="Helvetia 12",
                         background="skyblue1")
-        style.map("Calibration.TButton", 
+        style.map("Calibration.TButton",
                   background=[('active', 'green'), ('pressed', 'green')])
         # Top-left
-        self.tlButton = ttk.Button(
+        self.tl_btn = ttk.Button(
             self, text="TL", style="Calibration.TButton", width=btnwidth)
-        self.tlButton.bind("<Button-1>", self.tl_left_cb)
-        self.tlButton.bind("<Button-3>", self.tl_right_cb)
-        self.tlButton.grid(row=0, column=0, columnspan=2, sticky=fillcell, 
-                           pady=btnpad, padx=btnpad)
+        self.tl_btn.bind("<Button-1>", self.tl_left_cb)
+        self.tl_btn.bind("<Button-3>", self.tl_right_cb)
+        self.tl_btn.grid(row=0, column=0, columnspan=2, sticky=fillcell,
+                         pady=btnpad, padx=btnpad)
 
         # Top-right
-        self.trButton = ttk.Button(self, text="TR", 
-                                   style="Calibration.TButton", width=btnwidth)
-        self.trButton.bind("<Button-1>", self.tr_cb)
-        self.trButton.grid(row=0, column=2, columnspan=2, 
-                           sticky=fillcell, pady=btnpad, padx=btnpad)
+        self.tr_btn = ttk.Button(self, text="TR",
+                                 style="Calibration.TButton", width=btnwidth)
+        self.tr_btn.bind("<Button-1>", self.tr_cb)
+        self.tr_btn.grid(row=0, column=2, columnspan=2,
+                         sticky=fillcell, pady=btnpad, padx=btnpad)
 
         # Bottom-left
-        self.blButton = ttk.Button(self, text="BL", 
-                                   style="Calibration.TButton", width=btnwidth)
-        self.blButton.bind("<Button-1>", self.bl_cb)
-        self.blButton.grid(row=2, column=0, columnspan=2, sticky=fillcell, 
-                           pady=btnpad, padx=btnpad)
+        self.bl_btn = ttk.Button(self, text="BL",
+                                 style="Calibration.TButton", width=btnwidth)
+        self.bl_btn.bind("<Button-1>", self.bl_cb)
+        self.bl_btn.grid(row=2, column=0, columnspan=2, sticky=fillcell,
+                         pady=btnpad, padx=btnpad)
 
         # Bottom-right
-        self.brButton = ttk.Button(self, text="BR", 
-                                   style="Calibration.TButton", width=btnwidth)
-        self.brButton.bind("<Button-1>", self.br_cb)
-        self.brButton.grid(row=2, column=2, columnspan=2, sticky=fillcell, 
-                           pady=btnpad, padx=btnpad)
+        self.br_btn = ttk.Button(self, text="BR",
+                                 style="Calibration.TButton", width=btnwidth)
+        self.br_btn.bind("<Button-1>", self.br_cb)
+        self.br_btn.grid(row=2, column=2, columnspan=2, sticky=fillcell,
+                         pady=btnpad, padx=btnpad)
 
         # set button
-        style.configure("Calibration-Set.TButton", font="Helvetia 12 bold", 
+        style.configure("Calibration-Set.TButton", font="Helvetia 12 bold",
                         background="yellow")
-        style.map("Calibration-Set.TButton", 
+        style.map("Calibration-Set.TButton",
                   background=[('active', 'green'), ('pressed', 'green')])
-        self.setButton = ttk.Button(
+        self.set_btn = ttk.Button(
             self, text="SET", style="Calibration-Set.TButton", width=btnwidth)
-        self.setButton.bind("<Button-1>", self.set_cb)
-        self.setButton.grid(row=1, column=1, columnspan=2, sticky=fillcell, 
-                            pady=btnpad, padx=btnpad)
+        self.set_btn.bind("<Button-1>", self.set_cb)
+        self.set_btn.grid(row=1, column=1, columnspan=2, sticky=fillcell,
+                          pady=btnpad, padx=btnpad)
 
     def tl_left_cb(self, event):
         """Callback for the top left button left click.
@@ -370,7 +371,7 @@ class CalibrationTool(tk.Frame):
         self.corner = "TR"
         self.parent.mcoords(self.parent.config.nx - 1, 0, 0)
         self.parent.messagearea.set_text("SET now changes TR coordinates.")
-    
+
     def bl_cb(self, event):
         """Callback for the bottom left button left click.
 
@@ -426,7 +427,7 @@ class CalibrationTool(tk.Frame):
             print('new', self.corner, m)
             message = "{} coordinates saved".format(self.corner)
             self.parent.messagearea.set_text(message)
-        
+
         self.corner = None
 
 class HardwareControls(tk.Frame):
@@ -438,11 +439,11 @@ class HardwareControls(tk.Frame):
 
     Attributes:
         parent: actual parent is a container so this is the container's parent
-        viewButton: Controls the live preview of the camera
-        resetButton: Resets the origin
-        closeButton: Stops a run or closes the program
-        light1Button: Light switch for white light
-        light2Button: Light switch for color light
+        view_btn: Controls the live preview of the camera
+        reset_btn: Resets the origin
+        close_btn: Stops a run or closes the program
+        light1_btn: Light switch for white light
+        light2_btn: Light switch for color light
     """
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
@@ -454,35 +455,35 @@ class HardwareControls(tk.Frame):
         fillcell = tk.N + tk.E + tk.S + tk.W
         btnpad = 1
         style = ttk.Style()
-        style.configure('LiveView.TButton', font="Helvetia 12 bold", 
+        style.configure('LiveView.TButton', font="Helvetia 12 bold",
                         foreground="black", background="orange")
-        style.map('LiveView.TButton', 
+        style.map('LiveView.TButton',
                   background=[('active', 'green'), ('pressed', 'green')])
-        self.viewButton = ttk.Button(
+        self.view_btn = ttk.Button(
             self, text="VIEW", style="LiveView.TButton")
-        self.viewButton.bind("<Button-1>", self.view_cb)
-        self.viewButton.grid(
+        self.view_btn.bind("<Button-1>", self.view_cb)
+        self.view_btn.grid(
             columnspan=2, sticky=fillcell, pady=btnpad, padx=btnpad)
 
-        self.resetButton = ttk.Button(self, text="reset origin")
-        self.resetButton.bind("<Button-1>", self.reset_cb)
-        self.resetButton.bind("<Button-3>", self.reset_right_cb)
-        self.resetButton.grid(
+        self.reset_btn = ttk.Button(self, text="reset origin")
+        self.reset_btn.bind("<Button-1>", self.reset_cb)
+        self.reset_btn.bind("<Button-3>", self.reset_right_cb)
+        self.reset_btn.grid(
             row=1, column=0, sticky=fillcell, pady=btnpad, padx=btnpad)
-        
-        self.closeButton = ttk.Button(self, text="stop/close")
-        self.closeButton.bind("<Button-1>", self.close_cb)
-        self.closeButton.grid(
+
+        self.close_btn = ttk.Button(self, text="stop/close")
+        self.close_btn.bind("<Button-1>", self.close_cb)
+        self.close_btn.grid(
             row=1, column=1, sticky=fillcell, pady=btnpad, padx=btnpad)
 
-        self.light1Button = ttk.Button(self, text="light1")
-        self.light1Button.bind("<Button-1>", self.light1_cb)
-        self.light1Button.grid(
+        self.light1_btn = ttk.Button(self, text="light1")
+        self.light1_btn.bind("<Button-1>", self.light1_cb)
+        self.light1_btn.grid(
             row=2, column=0, sticky=fillcell, pady=btnpad, padx=btnpad)
 
-        self.light2Button = ttk.Button(self, text="light2")
-        self.light2Button.bind("<Button-1>", self.light2_cb)
-        self.light2Button.grid(
+        self.light2_btn = ttk.Button(self, text="light2")
+        self.light2_btn.bind("<Button-1>", self.light2_cb)
+        self.light2_btn.grid(
             row=2, column=1, sticky=fillcell, pady=btnpad, padx=btnpad)
 
     def view_cb(self, event):
@@ -547,7 +548,7 @@ class HardwareControls(tk.Frame):
             event: information on the event that triggered this
         """
         self.parent.microscope.toggle_light2_arduino()
-            
+
 class CalibrationAndHardware(tk.Frame):
     """Container for Calibration and Hardware
 
@@ -578,9 +579,9 @@ class MovementTool(tk.Frame):
     Attributes:
         parent: actual parent is a container so this is the container's parent
         pose: Entry box for the desired sample
-        gotoButton: Navigates to sample specified in pose above
-        prevButton: Navigates to the previous sample
-        nextButton: Navigates to the next sample
+        goto_btn: Navigates to sample specified in pose above
+        prev_btn: Navigates to the previous sample
+        next_btn: Navigates to the next sample
     """
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
@@ -592,38 +593,43 @@ class MovementTool(tk.Frame):
         GUI.configure_columns(self, 2)
 
         fillcell = tk.N + tk.E + tk.S + tk.W
-        pady=3
-        padx=5
+        pady = 3
+        padx = 5
         width = 0
         style = ttk.Style()
         style.configure('Movement.TButton', background="cyan2")
-        style.map('Movement.TButton', 
+        style.map('Movement.TButton',
                   background=[('active', 'green'), ('pressed', 'green')])
 
-        self.gotoButton = ttk.Button(
+        self.goto_btn = ttk.Button(
             self, text="go to", style="Movement.TButton", width=width)
-        self.gotoButton.bind("<Button-1>", self.goto_cb)
-        self.gotoButton.grid(
+        self.goto_btn.bind("<Button-1>", self.goto_cb)
+        self.goto_btn.grid(
             row=0, column=0, sticky=fillcell, pady=pady, padx=padx)
 
         self.pose = ttk.Entry(self, width=width)
         self.pose.insert(0, "A1")
         self.pose.grid(row=0, column=1, sticky=fillcell, pady=pady, padx=padx)
 
-        self.prevButton = ttk.Button(
+        self.prev_btn = ttk.Button(
             self, text="prev", style="Movement.TButton", width=width)
-        self.prevButton.bind("<Button-1>", self.prev_left_cb)
-        self.prevButton.bind("<Button-3>", self.prev_right_cb)
-        self.prevButton.grid(
+        self.prev_btn.bind("<Button-1>", self.prev_left_cb)
+        self.prev_btn.bind("<Button-3>", self.prev_right_cb)
+        self.prev_btn.grid(
             row=1, column=0, sticky=fillcell, pady=pady, padx=padx)
 
-        self.nextButton = ttk.Button(
+        self.next_btn = ttk.Button(
             self, text="next", style="Movement.TButton", width=width)
-        self.nextButton.bind("<Button-1>", self.next_left_cb)
-        self.nextButton.bind("<Button-3>", self.next_right_cb)
-        self.nextButton.grid(
+        self.next_btn.bind("<Button-1>", self.next_left_cb)
+        self.next_btn.bind("<Button-3>", self.next_right_cb)
+        self.next_btn.grid(
             row=1, column=1, sticky=fillcell, pady=pady, padx=padx)
-    
+
+    def _cancel_calibration(self):
+        """Cancels calibrating if user was previously calibrating
+        """
+        self.parent.calibrationtool.corner = None
+
     def goto_cb(self, event):
         """Navigates to the well specified in pose
 
@@ -631,7 +637,7 @@ class MovementTool(tk.Frame):
             event: information on the event that triggered this
         """
         self.parent.configurationtool.update_config()
-        self.corner = None
+        self._cancel_calibration()
         pose_txt = str(self.pose.get())
         pose_txt = pose_txt.replace(" ", "") #get rid of spaces
         pose_txt = pose_txt.rstrip("\r\n") # get rid of carraige return
@@ -645,7 +651,7 @@ class MovementTool(tk.Frame):
                 samp = self.parent.config.get_subsample_index(sample_name[-1])
                 sample_name = sample_name[0:-1] # remove subsample
             row, col = self.parent.config.get_row_col(sample_name)
-            print('yrow,xcol',row, col)
+            print('yrow,xcol', row, col)
             self.parent.mcoords(col, row, samp)
         except:
             self.parent.messagearea.set_text("input error")
@@ -657,7 +663,7 @@ class MovementTool(tk.Frame):
             event: information on the event that triggered this
         """
         self.parent.configurationtool.update_config()
-        self.corner = None
+        self._cancel_calibration()
         self.parent.messagearea.set_text("")
         if self.parent.microscope.samp > 0:
             self.parent.mcoords(newcol=self.parent.microscope.xcol,
@@ -687,8 +693,8 @@ class MovementTool(tk.Frame):
         newrow = self.parent.microscope.yrow - 1
         if newrow == -1:
             newrow = self.parent.config.ny - 1
-        self.parent.mcoords(newcol=self.parent.microscope.xcol, 
-                            newrow=newrow, 
+        self.parent.mcoords(newcol=self.parent.microscope.xcol,
+                            newrow=newrow,
                             newsamp=self.parent.microscope.samp)
 
     def next_left_cb(self, event):
@@ -698,7 +704,7 @@ class MovementTool(tk.Frame):
             event: information on the event that triggered this
         """
         self.parent.configurationtool.update_config()
-        self.corner = None
+        self._cancel_calibration()
         self.parent.messagearea.set_text("")
         if self.parent.microscope.samp < (self.parent.config.samps - 1):
             self.parent.mcoords(newcol=self.parent.microscope.xcol,
@@ -723,10 +729,10 @@ class MovementTool(tk.Frame):
             event: information on the event that triggered this
         """
         self.parent.configurationtool.update_config()
-        self.corner = None
+        self._cancel_calibration()
         self.parent.messagearea.set_text("")
         newrow = self.parent.microscope.yrow + 1
-        if newrow == self.parent.config.ny: 
+        if newrow == self.parent.config.ny:
             newrow = 0
         self.parent.mcoords(newcol=self.parent.microscope.xcol,
                             newrow=newrow,
@@ -737,8 +743,8 @@ class ImagingControls(tk.Frame):
 
     Attributes:
         parent: actual parent is a container so this is the container's parent
-        snapButton: takes a single image of the current view
-        runButton: takes a series of images, determined by the configuration
+        snap_btn: takes a single image of the current view
+        run_btn: takes a series of images, determined by the configuration
     """
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
@@ -749,35 +755,35 @@ class ImagingControls(tk.Frame):
 
         fillcell = tk.N + tk.E + tk.S + tk.W
         style = ttk.Style()
-        style.map('ActvGreen.TButton', 
+        style.map('ActvGreen.TButton',
                   background=[('active', 'green'), ('pressed', 'green')])
-        style.configure('Img-Snp.ActvGreen.TButton', font="Helvetia 12 bold", 
+        style.configure('Img-Snp.ActvGreen.TButton', font="Helvetia 12 bold",
                         foreground="white", background="medium blue")
-        style.configure('Img-Run.ActvGreen.TButton', font="Helvetia 12 bold", 
+        style.configure('Img-Run.ActvGreen.TButton', font="Helvetia 12 bold",
                         foreground="yellow", background="black")
 
-        self.snapButton = ttk.Button(
+        self.snap_btn = ttk.Button(
             self, text="SNAP IMAGE", style="Img-Snp.ActvGreen.TButton")
-        self.snapButton.bind("<Button-1>", self.snap_cb)
-        self.snapButton.bind("<Button-3>", self.snap_right_cb)
-        self.snapButton.grid(sticky=fillcell, pady=(0,5))
+        self.snap_btn.bind("<Button-1>", self.snap_cb)
+        self.snap_btn.bind("<Button-3>", self.snap_right_cb)
+        self.snap_btn.grid(sticky=fillcell, pady=(0, 5))
 
-        self.runButton = ttk.Button(
+        self.run_btn = ttk.Button(
             self, text="RUN", style="Img-Run.ActvGreen.TButton")
-        self.runButton.bind("<Button-1>", self.run_cb)
-        self.runButton.grid(sticky=fillcell, pady=(5,0))
-    
+        self.run_btn.bind("<Button-1>", self.run_cb)
+        self.run_btn.grid(sticky=fillcell, pady=(5, 0))
+
     def _tdate(self):
         """Returns the current date as a nice string
         """
-        return datetime.now().strftime('%h-%d-%Y_%I:%M%p').replace(" ","")
+        return datetime.now().strftime('%h-%d-%Y_%I:%M%p').replace(" ", "")
 
     def _initialize_directories(self, snap=True):
         """Ensure all directories and subdirectories exist for images
-        
+
         Args:
             snap: Boolean indicating whether this is for a single image
-        
+
         Returns:
             The path to the innermost directory
         """
@@ -796,13 +802,13 @@ class ImagingControls(tk.Frame):
             msg = 'created directory {} within the images/{} directory'.format(
                 nroot, sID)
             print(msg)
-        
+
         if snap:
             path1 += '/snaps'
             if not os.path.isdir(path1):
                 os.mkdir(path1)
                 msg = ("created directory \'snaps\' " +
-                      "within the images/{}/{} directory".format(sID, nroot))
+                       "within the images/{}/{} directory".format(sID, nroot))
                 print(msg)
         else:
             path1 += '/' + self._tdate()
@@ -822,15 +828,15 @@ class ImagingControls(tk.Frame):
         xcol = self.parent.microscope.xcol
         yrow = self.parent.microscope.yrow
         samp = self.parent.microscope.samp
-        if self.parent.config.samps == 1: 
-            sname = (path1 + '/' + 
-                    self.parent.config.get_sample_name(yrow, xcol)+
-                    "_"+self._tdate()+'.jpg')
+        if self.parent.config.samps == 1:
+            sname = (path1 + '/' +
+                     self.parent.config.get_sample_name(yrow, xcol)+
+                     "_"+self._tdate()+'.jpg')
         else:
-            sname = (path1 + '/' + 
-                    self.parent.config.get_sample_name(yrow, xcol)+
-                    self.parent.config.get_subsample_id(samp)+
-                    "_"+self._tdate()+'.jpg')
+            sname = (path1 + '/' +
+                     self.parent.config.get_sample_name(yrow, xcol)+
+                     self.parent.config.get_subsample_id(samp)+
+                     "_"+self._tdate()+'.jpg')
         self.parent.microscope.camera.capture(sname)
         self.parent.messagearea.set_text("image saved to {}".format(sname))
 
@@ -849,12 +855,12 @@ class ImagingControls(tk.Frame):
         """
         zrange = (self.parent.config.nimages-1)*self.parent.config.zstep
         # bottom of the zrange (this is the top of the sample!)
-        z = (self.parent.microscope.mz - 
-            (1-self.parent.microscope.fracbelow)*zrange)
+        z = (self.parent.microscope.mz -
+             (1-self.parent.microscope.fracbelow)*zrange)
         line = 'align_image_stack -m -a OUT '
         for imgnum in range(self.parent.config.nimages):
             self.parent.microscope.grbl.rapid_move(z=z)
-            self.parent.microscope.wait_for_Idle()
+            self.parent.microscope.wait_for_idle()
             fname = samp_name + "_" + str(imgnum) + ".jpg"
             if internaldirs is not None:
                 internalpath = internaldirs + "/" + fname
@@ -862,11 +868,11 @@ class ImagingControls(tk.Frame):
                 internalpath = fname
             imgname = basepath + "/" + internalpath
             # slow things down to allow camera to settle down
-            sleep(self.parent.microscope.camera_delay) 
+            sleep(self.parent.microscope.camera_delay)
             self.parent.microscope.camera.capture(imgname)
             line += internalpath
             z += self.parent.config.zstep
-        line += (' \n') 
+        line += (' \n')
         return line
 
     def _append_to_stack_process(self, processf, samp_name, line):
@@ -881,14 +887,14 @@ class ImagingControls(tk.Frame):
         processf.write('echo \'processing: '+samp_name+'\' \n')
         processf.write(line)
         enfuse = ("enfuse " +
-                 "--exposure-weight=0 --saturation-weight=0 " +
-                 "--contrast-weight=1 --hard-mask " +
-                 "--output={}.tif OUT*.tif \n".format(samp_name))
+                  "--exposure-weight=0 --saturation-weight=0 " +
+                  "--contrast-weight=1 --hard-mask " +
+                  "--output={}.tif OUT*.tif \n".format(samp_name))
         processf.write(enfuse)
         processf.write('rm OUT*.tif \n')
 
     def snap_right_cb(self, event):
-        """right mouse snap - takes a series of z-stacked pictures using 
+        """right mouse snap - takes a series of z-stacked pictures using
         nimages and Z-spacing parameters
 
         Args:
@@ -900,22 +906,22 @@ class ImagingControls(tk.Frame):
         samp = self.parent.microscope.samp
         if self.parent.config.samps > 1:
             samp_name = self.parent.config.get_name_with_subsample(
-                yrow, xcol,samp)
+                yrow, xcol, samp)
         else:
             samp_name = self.parent.config.get_sample_name(yrow, xcol)
         path1 = self._initialize_directories()
-        processf = open(path1 + '/' + samp_name + '_process_snap.com','w')
+        processf = open(path1 + '/' + samp_name + '_process_snap.com', 'w')
         processf.write('rm OUT*.tif \n')
         z_sav = self.parent.microscope.mz
         samp_name += '_' + self._tdate()
         line = self._take_zstack(path1, samp_name)
         self._append_to_stack_process(processf, samp_name, line)
-        self.parent.microscope.grbl.rapid_move(z=z_sav) # return to original z 
-        self.parent.microscope.wait_for_Idle()
+        self.parent.microscope.grbl.rapid_move(z=z_sav) # return to original z
+        self.parent.microscope.wait_for_idle()
         self.parent.messagearea.set_text(
-            "individual images:" + path1 + "\n" + 
+            "individual images:" + path1 + "\n" +
             "source "+samp_name+"_process_snap.com to combine z-stack")
-    
+
     def run_cb(self, event):
         """Runs a series of image shots
 
@@ -923,8 +929,8 @@ class ImagingControls(tk.Frame):
             event: information on the event that triggered this
         """
         # get data from the GUI window and update the configuration file..
-        self.parent.configurationtool.updatebtn_cb(event) 
-        self.parent.mcoords(0,0,0) #go to A1
+        self.parent.configurationtool.updatebtn_cb(event)
+        self.parent.mcoords(0, 0, 0) #go to A1
         imgpath = self._initialize_directories(snap=False)
         if not os.path.isdir(imgpath+'/rawimages'):
             os.mkdir(imgpath+'/rawimages')
@@ -934,17 +940,17 @@ class ImagingControls(tk.Frame):
         if not self.parent.microscope.viewing:
             self.parent.microscope.switch_camera_preview()
             sleep(2) # let camera adapt to the light before collecting images
-        processf = open(imgpath+'/process'+self.parent.config.nroot+'.com','w')
+        processf = open(imgpath+'/process'+self.parent.config.nroot+'.com', 'w')
         processf.write('rm OUT*.tif \n')
-        self.parent.microscope.running=True
+        self.parent.microscope.running = True
         self.parent.messagearea.set_text("imaging samples...")
-        if self.parent.microscope.disable_hard_limits: 
+        if self.parent.microscope.disable_hard_limits:
             self.parent.microscope.grbl.hard_limits(False)
             print('hard limits disabled')
         for well in range(self.parent.config.ny * self.parent.config.nx):
             yrow, xcol = self.parent.config.get_row_col(well)
             for samp in range(self.parent.config.samps):
-                if self.parent.microscope.stopit: 
+                if self.parent.microscope.stopit:
                     break
                 self.parent.mcoords(xcol, yrow, samp) # go to sample
                 samp_name = self.parent.config.get_name_with_subsample(
@@ -954,12 +960,12 @@ class ImagingControls(tk.Frame):
         self.parent.microscope.running = False
         processf.close()
         # turn off the preview so the monitor can go black when the pi sleeps
-        self.parent.microscope.switch_camera_preview() 
+        self.parent.microscope.switch_camera_preview()
         self.parent.microscope.toggle_light1() #turn off light1
         self.parent.microscope.toggle_light2_arduino() #turn off light2
-        if self.parent.microscope.disable_hard_limits: 
+        if self.parent.microscope.disable_hard_limits:
             # turn hard limits back on
-            self.parent.microscope.grbl.hard_limits(True) 
+            self.parent.microscope.grbl.hard_limits(True)
             print('hard limits enabled')
         self.parent.microscope.stopit = False
 
@@ -999,8 +1005,8 @@ class ConfigurationTool(tk.Frame):
         nye: Entry field for number of columns
         nimge: Entry field for number of images to take of each drop during run
         zspe: Entry field for z-spacing in between each image
-        updateButton: Writes configuration to specified file
-        readButton: Reads configuration from specified file
+        update_btn: Writes configuration to specified file
+        read_btn: Reads configuration from specified file
     """
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
@@ -1010,23 +1016,23 @@ class ConfigurationTool(tk.Frame):
         self.parent = parent
         GUI.configure_rows(self, 4)
         GUI.configure_columns(self, 10)
-        
+
         fillcell = tk.N + tk.E + tk.S + tk.W
         style = ttk.Style()
-        style.configure('Config.TButton', 
+        style.configure('Config.TButton',
                         font="Helvetia 10", width=8, background="yellow")
-        style.map('Config.TButton', 
+        style.map('Config.TButton',
                   background=[('active', 'green'), ('pressed', 'green')])
-        style.configure('Config.TLabel', 
+        style.configure('Config.TLabel',
                         background=self['bg'], font="Helvetia 10")
 
         self.filee = ttk.Entry(self, width=1)
         self.filee.grid(
-            row=0, column=0, columnspan=3, pady=2, padx=(2,0), sticky=fillcell)
+            row=0, column=0, columnspan=3, pady=2, padx=(2, 0), sticky=fillcell)
 
         ttk.Label(
             self, text='Sample ID:', style="Config.TLabel", anchor=tk.E).grid(
-                row=0, column=3, columnspan=2, sticky=fillcell,pady=2)
+                row=0, column=3, columnspan=2, sticky=fillcell, pady=2)
         self.sIDe = ttk.Entry(self, width=1)
         self.sIDe.grid(row=0, column=5, columnspan=5, pady=2, sticky=fillcell)
 
@@ -1037,7 +1043,7 @@ class ConfigurationTool(tk.Frame):
         self.pIDe.grid(row=1, column=2, columnspan=3, pady=2, sticky=fillcell)
 
         ttk.Label(
-            self, text='samples/pos:', style="Config.TLabel", 
+            self, text='samples/pos:', style="Config.TLabel",
             anchor=tk.E).grid(
                 row=1, column=5, columnspan=4, sticky=fillcell, pady=2)
         self.sampse = ttk.Entry(self, width=1)
@@ -1067,16 +1073,16 @@ class ConfigurationTool(tk.Frame):
         self.zspe = ttk.Entry(self, width=1)
         self.zspe.grid(row=2, column=8, columnspan=2, sticky=fillcell, pady=2)
 
-        self.updateButton = ttk.Button(
+        self.update_btn = ttk.Button(
             self, text="write/update", style="Config.TButton")
-        self.updateButton.bind("<Button-1>", self.updatebtn_cb)
-        self.updateButton.grid(
+        self.update_btn.bind("<Button-1>", self.updatebtn_cb)
+        self.update_btn.grid(
             row=3, column=0, columnspan=5, sticky=fillcell, padx=2, pady=2)
 
-        self.readButton = ttk.Button(
+        self.read_btn = ttk.Button(
             self, text="read file", style="Config.TButton")
-        self.readButton.bind("<Button-1>", self.readbtn_cb)
-        self.readButton.grid(
+        self.read_btn.bind("<Button-1>", self.readbtn_cb)
+        self.read_btn.grid(
             row=3, column=5, columnspan=5, sticky=fillcell, padx=2, pady=2)
 
         if self.parent.config:
@@ -1084,7 +1090,7 @@ class ConfigurationTool(tk.Frame):
 
     def updatebtn_cb(self, event):
         """Updates config values and writes updates to file
-        
+
         Args:
             event: information on the event that triggered this
         """
@@ -1098,8 +1104,8 @@ class ConfigurationTool(tk.Frame):
         if " " in tmp_fname:
             self.parent.messagearea.set_text(
                 "file name cannot contain spaces. Nothing written.")
-            self.filee.delete(0,tk.END)
-            self.filee.insert(0,"")
+            self.filee.delete(0, tk.END)
+            self.filee.insert(0, "")
             self.update()
         else:
             if self.update_config():
@@ -1122,7 +1128,7 @@ class ConfigurationTool(tk.Frame):
         ny = int(self.nye.get())
         samps = int(self.sampse.get())
 
-        if nx <=1 or ny <= 1:
+        if nx <= 1 or ny <= 1:
             self.parent.messagearea.set_text(
                 "NX and NY must be greater than 1")
             return False
@@ -1130,7 +1136,7 @@ class ConfigurationTool(tk.Frame):
         if samps < 1:
             self.parent.messagearea.set_text("Samps must be greater than 0")
             return False
-        
+
         self.parent.config.fname = str(self.filee.get())
         self.parent.config.nx = nx
         self.parent.config.ny = ny
@@ -1144,7 +1150,7 @@ class ConfigurationTool(tk.Frame):
 
     def readbtn_cb(self, event):
         """Reads config values from file
-        
+
         Args:
             event: information on the event that triggered this
         """
@@ -1153,7 +1159,7 @@ class ConfigurationTool(tk.Frame):
         self.update_entry_fields()
         print('Parameters read from ' + fname)
         self.update()
-    
+
     def update_entry_fields(self):
         """Updates entry fields to match those in the Config module
         """
@@ -1223,17 +1229,17 @@ class GUI(tk.Frame):
         self.configurationtool = ConfigurationTool(self)
 
         # Add GUI Areas to Frame
-        fillHorizontal = tk.E + tk.W
+        fill_horizontal = tk.E + tk.W
         separationpad = 3
-        self.messagearea.grid(sticky=fillHorizontal)
+        self.messagearea.grid(sticky=fill_horizontal)
         self.translationtool.grid(
-            sticky=fillHorizontal, pady=(separationpad,0))
+            sticky=fill_horizontal, pady=(separationpad, 0))
         self.calibrationandhardware.grid(
-            sticky=fillHorizontal, pady=(separationpad,0))
+            sticky=fill_horizontal, pady=(separationpad, 0))
         self.movementandimaging.grid(
-            sticky=fillHorizontal, pady=(separationpad,0))
+            sticky=fill_horizontal, pady=(separationpad, 0))
         self.configurationtool.grid(
-            sticky=fillHorizontal, pady=(separationpad,1), padx=3)
+            sticky=fill_horizontal, pady=(separationpad, 1), padx=3)
 
     @staticmethod
     def configure_rows(obj, numrows):
@@ -1302,7 +1308,7 @@ class GUI(tk.Frame):
         """
         print('moving back to the origin and ' +
               'closing the graphical user interface')
-        self.microscope.grbl.run_homing_cycle() # tell grbl to find zero 
+        self.microscope.grbl.run_homing_cycle() # tell grbl to find zero
         if self.microscope.light1_stat:
             self.microscope.toggle_light1()
         if self.microscope.light2_stat:
@@ -1313,12 +1319,14 @@ class GUI(tk.Frame):
         self.parent.destroy()
 
 def main():
+    """Main program controller
+    """
     print('\n Bonjour, ami \n')
     if not os.path.isdir("images"): # check to be sure images directory exists
         print('"images" directory (or symbolic link) not found. \n' +
-             'This should be in the same directory as this program. \n' +
-             'You need to create the directory or fix the link before ' +
-             'continuing. \n' + 'i.e. mkdir images')
+              'This should be in the same directory as this program. \n' +
+              'You need to create the directory or fix the link before ' +
+              'continuing. \n' + 'i.e. mkdir images')
         sys.exit()
 
     # load environment variables
@@ -1333,7 +1341,7 @@ def main():
     root.resizable(False, False)
     root.update()
 
-    # for selfresizing: 
+    # for selfresizing:
     # https://stackoverflow.com/questions/7591294/how-to-create-a-self-resizing-grid-of-buttons-in-tkinter
     frame = GUI(root, background="white")
     frame.pack(side="top", fill="both", expand=True)
@@ -1344,7 +1352,7 @@ def main():
 
     root.update()
     root.geometry("{}x{}+{}+{}".format(
-        root.winfo_width(), root.winfo_height(), 
+        root.winfo_width(), root.winfo_height(),
         root.winfo_screenwidth() - root.winfo_width(), 0))
     root.mainloop()
 

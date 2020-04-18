@@ -4,10 +4,11 @@ This file contains the classes to control interactions with the adapted
 CNC Machine for AMi.
 """
 
-from picamera import PiCamera
-import RPi.GPIO as GPIO
-import serial, pty, os
+import pty
+import os
 from time import sleep
+import RPi.GPIO as GPIO
+from picamera import PiCamera
 
 from GRBL import GRBL
 
@@ -90,8 +91,7 @@ class Microscope():
         portname = None
         baudrate = 115200
         if self._in_dev_machine():
-            master, slave = pty.openpty()
-            master # get rid of unused variable warning
+            _, slave = pty.openpty()
             portname = os.ttyname(slave) # dummy name (DEVELOMENT)
         else:
             portname = '/dev/ttyUSB0' # real name (PRODUCTION)
@@ -107,18 +107,18 @@ class Microscope():
         if self.wx == -199.0:
             # ensures that zero is zero and not -199.0, -199.0, -199.0
             self.grbl.set_coordinate_system(1, self.wx, self.wy, self.wz)
-        # set pin A3 high -used later to detect end of movement 
-        self.grbl.coolant_control(flood=True) 
+        # set pin A3 high -used later to detect end of movement
+        self.grbl.coolant_control(flood=True)
         print(" You\'ll probably want to click VIEW and turn on some lights " +
               "at this point. \n Then you may want to check the alignment of " +
               "the four corner samples")
-        # unlock so spindle power can engage for light2 
-        self.grbl.kill_alarm_lock() 
+        # unlock so spindle power can engage for light2
+        self.grbl.kill_alarm_lock()
         self.grbl.set_spindle_speed(1000) # set max spindle volocity
 
     def get_machine_position(self):
         """Returns the current position of the machine as [x, y, z]
-        
+
         Returns the current position of the machine as a python list
         ordered in the usual manner --> x, y, z
         """
@@ -135,7 +135,7 @@ class Microscope():
             self.viewing = False
         else:
             self.camera.start_preview(
-                fullscreen=False, window=(0,-76,1597,1200)) # TODO: add dynamic window calculation
+                fullscreen=False, window=(0, -76, 1597, 1200)) # TODO: add dynamic window calculation
             self.viewing = True
 
     def _in_dev_machine(self):
@@ -159,17 +159,17 @@ class Microscope():
         mode, this function simulates a fake response as if the "?" query
         had been sent.
 
-        Returns: 
+        Returns:
             A carriage-return terminated response from grbl or a dummy
             response if the program is in development.
         """
-        if self._in_dev_machine:
+        if self._in_dev_machine():
             sleep(1)
             return "<Idle,MPos:0.0,0.0,0.0,WPos:0.0,0.0,0.0>".encode('utf-8')
         else:
             return self.grbl._wait_for_response()
 
-    def wait_for_Idle(self):
+    def wait_for_idle(self):
         """Waits for Arduino to complete movement
         """
         self.grbl.coolant_control(flood=False) # set pin A3 low
@@ -218,13 +218,13 @@ class Microscope():
             The new mx, my, mz machine positions
         """
         print("called mcoords with yrow,xcol,samp:",
-              self.yrow,self.xcol,self.samp)
-        self.wait_for_Idle()
+              self.yrow, self.xcol, self.samp)
+        self.wait_for_idle()
         self.mx, self.my, self.mz = self.calculate_machine_position(
             self.xcol, self.yrow, self.samp)
-        print('mx,my,mz',self.mx,self.my,self.mz) # TODO: does this need to be here?
+        print('mx,my,mz', self.mx, self.my, self.mz) # TODO: does this need to be here?
         self.grbl.rapid_move(self.mx, self.my, self.mz)
-        self.wait_for_Idle()
+        self.wait_for_idle()
         return self.mx, self.my, self.mz
 
     def calculate_machine_position(self, col, row, samp):
@@ -241,11 +241,11 @@ class Microscope():
         br, bl = self.config.br, self.config.bl
         tr, tl = self.config.tr, self.config.tl
 
-        # Calculate fractional location of sample 
-        x = (col / float(self.config.nx - 1) + 
-            self.config.samp_coord[self.samp][0])
-        y = (row / float(self.config.ny - 1) + 
-            self.config.samp_coord[self.samp][1])
+        # Calculate fractional location of sample
+        x = (col / float(self.config.nx - 1) +
+             self.config.samp_coord[samp][0])
+        y = (row / float(self.config.ny - 1) +
+             self.config.samp_coord[samp][1])
 
         # Interpolate
         mx = br[0]*x*y + bl[0]*(1.-x)*y + tr[0]*x*(1.-y) + tl[0]*(1.-x)*(1.-y)

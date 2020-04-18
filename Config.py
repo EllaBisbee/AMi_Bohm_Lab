@@ -6,11 +6,9 @@ handling of those files.
 """
 
 import re
-import sys
 import os.path
-from os import path
-import numpy as np
 import string
+import numpy as np
 
 class Config():
     """Manages the configuration options specified in the given file
@@ -55,26 +53,26 @@ class Config():
         self._Ualphabet = string.ascii_uppercase
         self._Lalphabet = string.ascii_lowercase
         self.read()
-    
-    def _next_config(self, file, f):
+
+    def _next_config(self, file, closure):
         """Retrieves and cleans the next line in the configuration file
 
         Retrieves the next line from the given file stream.
         Strips comments from the line and considers spaces to designate
-        different items. Applies f to each item.
+        different items. Applies closure to each item.
 
         Args:
             file: an opened file stream to retrieve the next line from
-            f: function to apply to each item 
+            closure: function to apply to each item
 
         Returns:
-            A list containing each item after applying f to them
+            A list containing each item after applying closure to them
         """
         line = file.readline()
         line_no_comments = line.split("#", 1)[0]
         items = re.findall(r'\S+', line_no_comments)
-        return list(map(f, items))
-    
+        return list(map(closure, items))
+
     @staticmethod
     def print_help():
         """Static method to print the appropriate format of the file.
@@ -82,7 +80,7 @@ class Config():
         print(' The format of the configuration file was not right. ' +
               'It should look something like this:')
         print(' 12   8    1        # number of positions along x and y and ' +
-              'on the plate then number of samples at each position') 
+              'on the plate then number of samples at each position')
         print(' 134.2  29.3  7.5   # coordinates of the top left drop')
         print(' 35.2  28.7  7.3    # coordinates of the top right drop')
         print(' 133.5  92.9  7.1   # coordinates of the bottom left drop')
@@ -102,23 +100,23 @@ class Config():
             fname: filename to save to
         """
         with open(fname, "w") as f:
-            f.write(str('%6d%6d%6d     '%(12,8,1) +
-                    '# number of positons on x and y, ' +
-                    'then the number of samples at each position\n'))
-            f.write(str('%9.3f%9.3f%9.3f  '%(0.,0.,0.) +
-                    '# coordinates of the top left sample\n'))
-            f.write(str('%9.3f%9.3f%9.3f  '%(0.,0.,0.) +
-                    '# coordinates of the top right sample\n'))
-            f.write(str('%9.3f%9.3f%9.3f  '%(0.,0.,0.) +
-                    '# coordinates of the bottom left sample\n'))
-            f.write(str('%9.3f%9.3f%9.3f  '%(0.,0.,0.) +
-                    '# coordinates of the bottom right sample\n'))
-            f.write(str('%9.4f%9.4f  '%(0.,0.) +
-                    '# fractional offsets of sub-sample \n'))
+            f.write(str('%6d%6d%6d     '%(12, 8, 1) +
+                        '# number of positons on x and y, ' +
+                        'then the number of samples at each position\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(0., 0., 0.) +
+                        '# coordinates of the top left sample\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(0., 0., 0.) +
+                        '# coordinates of the top right sample\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(0., 0., 0.) +
+                        '# coordinates of the bottom left sample\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(0., 0., 0.) +
+                        '# coordinates of the bottom right sample\n'))
+            f.write(str('%9.4f%9.4f  '%(0., 0.) +
+                        '# fractional offsets of sub-sample \n'))
             f.write(str('%9.3f '%(0.3) +
-                    '# zstep - the spacing in z between images\n'))
+                        '# zstep - the spacing in z between images\n'))
             f.write(str('%6d     '%(3) +
-                    '# nimages - the number of images of each sample\n'))
+                        '# nimages - the number of images of each sample\n'))
             f.write('AMi_sample     # sample name\n')
             f.write('AB_xs2         # plate name\n')
 
@@ -126,38 +124,38 @@ class Config():
         """Writes to the internal configuration to the stored file name.
         """
         with open(self.fname, "w") as f:
-            f.write(str('%6d%6d%6d     '%(self.nx,self.ny,self.samps) +
-                '# number of positons on x and y, then the number of ' +
-                'samples at each position\n'))
-            f.write(str('%9.3f%9.3f%9.3f  '%(self.tl[0],self.tl[1],self.tl[2]) +
-                    '# coordinates of the top left sample\n'))
-            f.write(str('%9.3f%9.3f%9.3f  '%(self.tr[0],self.tr[1],self.tr[2]) +
-                    '# coordinates of the top right sample\n'))
-            f.write(str('%9.3f%9.3f%9.3f  '%(self.bl[0],self.bl[1],self.bl[2]) +
-                    '# coordinates of the bottom left sample\n'))
-            f.write(str('%9.3f%9.3f%9.3f  '%(self.br[0],self.br[1],self.br[2]) +
-                    '# coordinates of the bottom right sample\n'))
+            f.write(str('%6d%6d%6d     '%(self.nx, self.ny, self.samps) +
+                        '# number of positons on x and y, then the number of ' +
+                        'samples at each position\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(self.tl[0], self.tl[1], self.tl[2])
+                        + '# coordinates of the top left sample\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(self.tr[0], self.tr[1], self.tr[2])
+                        + '# coordinates of the top right sample\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(self.bl[0], self.bl[1], self.bl[2])
+                        + '# coordinates of the bottom left sample\n'))
+            f.write(str('%9.3f%9.3f%9.3f  '%(self.br[0], self.br[1], self.br[2])
+                        + '# coordinates of the bottom right sample\n'))
             for i in range(self.samps):
-                try: 
-                    _=self.samp_coord[i]
-                except: 
+                try:
+                    _ = self.samp_coord[i]
+                except:
                     self.samp_coord.append([0., 0.])
-                ta=float(self.samp_coord[i][0])
-                tb=float(self.samp_coord[i][1])
-                f.write(str('%9.4f%9.4f  '%(ta,tb) +
-                        '# fractional offsets of sub-sample \n'))
+                ta = float(self.samp_coord[i][0])
+                tb = float(self.samp_coord[i][1])
+                f.write(str('%9.4f%9.4f  '%(ta, tb) +
+                            '# fractional offsets of sub-sample \n'))
             f.write(str('%9.3f '%(self.zstep) +
-                    '# zstep - the spacing in z between images\n'))
+                        '# zstep - the spacing in z between images\n'))
             f.write(str('%6d     '%(self.nimages) +
-                    '# nimages - the number of images of each sample\n'))
+                        '# nimages - the number of images of each sample\n'))
             f.write(self.sID+'     # sample name\n')
             f.write(self.nroot+'     # plate name\n')
 
     def read(self):
         """Reads from the stored file name to the internal representation.
         """
-        Ualphabet=self._Ualphabet
-        Lalphabet=self._Lalphabet
+        Ualphabet = self._Ualphabet
+        Lalphabet = self._Lalphabet
 
         try:
             with open(self.fname, 'r') as f:
@@ -174,7 +172,7 @@ class Config():
                     f, str)[0].replace("\n", "").replace(" ", "")
                 self.nroot = self._next_config(
                     f, str)[0].replace("\n", "").replace(" ", "")
-                self._alphabet=Ualphabet[0:self.ny]+Lalphabet[0:self.ny]
+                self._alphabet = Ualphabet[0:self.ny]+Lalphabet[0:self.ny]
         except:
             raise Exception("invalid file format")
 
@@ -231,7 +229,7 @@ class Config():
 
         Throws:
             Exception if name is invalid
-        """ 
+        """
         if name[0].isdigit(): # name is in integer format
             numb = int(name)
             numb -= 1
@@ -257,7 +255,7 @@ class Config():
         return self.get_sample_name(row, col) + self.get_subsample_id(samp)
 
     def is_valid_sample_name(self, name):
-        """Checks if the given name is a valid sample name in format 
+        """Checks if the given name is a valid sample name in format
         LETTER then NUMBER (e.g. A1, B4)
 
         Args:
