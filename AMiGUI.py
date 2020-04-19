@@ -345,9 +345,7 @@ class CalibrationTool(tk.Frame):
         """
         self.parent.configurationtool.update_config()
         config = self.parent.config
-        if len(config.samp_coord) < config.samps:
-            diff = config.samps - len(config.samp_coord)
-            config.samp_coord.extend([[0., 0.] for _ in range(diff)])
+        config.ensure_samp_coord_dimension()
         print('samp_coord', config.samp_coord)
         if config.samps > 1:
             newsamp = self.parent.microscope.samp + 1
@@ -653,7 +651,7 @@ class MovementTool(tk.Frame):
             row, col = self.parent.config.get_row_col(sample_name)
             print('yrow,xcol', row, col)
             self.parent.mcoords(col, row, samp)
-        except:
+        except Exception: # pylint: disable=broad-except
             self.parent.messagearea.set_text("input error")
 
     def prev_left_cb(self, event):
@@ -870,7 +868,7 @@ class ImagingControls(tk.Frame):
             # slow things down to allow camera to settle down
             sleep(self.parent.microscope.camera_delay)
             self.parent.microscope.camera.capture(imgname)
-            line += internalpath
+            line += internalpath + " "
             z += self.parent.config.zstep
         line += (' \n')
         return line
@@ -922,6 +920,7 @@ class ImagingControls(tk.Frame):
             "individual images:" + path1 + "\n" +
             "source "+samp_name+"_process_snap.com to combine z-stack")
 
+    # TODO: convert to async so it can be stopped
     def run_cb(self, event):
         """Runs a series of image shots
 
@@ -948,7 +947,7 @@ class ImagingControls(tk.Frame):
             self.parent.microscope.grbl.hard_limits(False)
             print('hard limits disabled')
         for well in range(self.parent.config.ny * self.parent.config.nx):
-            yrow, xcol = self.parent.config.get_row_col(well)
+            yrow, xcol = self.parent.config.get_row_col(str(well+1))
             for samp in range(self.parent.config.samps):
                 if self.parent.microscope.stopit:
                     break
@@ -1275,7 +1274,7 @@ class GUI(tk.Frame):
             print("Configuration file does not exist. Creating one...")
             Config.write_default_config("AMi.config")
             self.config = Config("AMi.config")
-        except:
+        except Exception: # pylint: disable=broad-except
             Config.print_help()
             sys.exit() # invalid configuration format. Quit program.
 
@@ -1296,6 +1295,7 @@ class GUI(tk.Frame):
 
         self.movementtool.pose.delete(0, tk.END)
         self.movementtool.pose.insert(0, position_str)
+        self.movementtool.update()
 
         message = "showing {} position {}\n".format(
             position_str, newrow*self.config.nx + newcol+1)
@@ -1354,6 +1354,9 @@ def main():
     root.geometry("{}x{}+{}+{}".format(
         root.winfo_width(), root.winfo_height(),
         root.winfo_screenwidth() - root.winfo_width(), 0))
+    frame.microscope.camera_window = (
+        0, 0, root.winfo_screenwidth() - root.winfo_width(),
+        root.winfo_screenheight()) # Set camera window size
     root.mainloop()
 
     # After close

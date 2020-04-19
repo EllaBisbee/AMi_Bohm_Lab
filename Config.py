@@ -50,8 +50,8 @@ class Config():
             raise ValueError("invalid configuration file path.")
 
         self.fname = fname
-        self._Ualphabet = string.ascii_uppercase
-        self._Lalphabet = string.ascii_lowercase
+        self._upper_alphabet = string.ascii_uppercase
+        self._lower_alphabet = string.ascii_lowercase
         self.read()
 
     def _next_config(self, file, closure):
@@ -135,14 +135,11 @@ class Config():
                         + '# coordinates of the bottom left sample\n'))
             f.write(str('%9.3f%9.3f%9.3f  '%(self.br[0], self.br[1], self.br[2])
                         + '# coordinates of the bottom right sample\n'))
+            self.ensure_samp_coord_dimension()
             for i in range(self.samps):
-                try:
-                    _ = self.samp_coord[i]
-                except:
-                    self.samp_coord.append([0., 0.])
-                ta = float(self.samp_coord[i][0])
-                tb = float(self.samp_coord[i][1])
-                f.write(str('%9.4f%9.4f  '%(ta, tb) +
+                x_offset = float(self.samp_coord[i][0])
+                y_offset = float(self.samp_coord[i][1])
+                f.write(str('%9.4f%9.4f  '%(x_offset, y_offset) +
                             '# fractional offsets of sub-sample \n'))
             f.write(str('%9.3f '%(self.zstep) +
                         '# zstep - the spacing in z between images\n'))
@@ -154,8 +151,8 @@ class Config():
     def read(self):
         """Reads from the stored file name to the internal representation.
         """
-        Ualphabet = self._Ualphabet
-        Lalphabet = self._Lalphabet
+        upper_alphabet = self._upper_alphabet
+        lower_alphabet = self._lower_alphabet
 
         try:
             with open(self.fname, 'r') as f:
@@ -172,9 +169,19 @@ class Config():
                     f, str)[0].replace("\n", "").replace(" ", "")
                 self.nroot = self._next_config(
                     f, str)[0].replace("\n", "").replace(" ", "")
-                self._alphabet = Ualphabet[0:self.ny]+Lalphabet[0:self.ny]
+                self._alphabet = (upper_alphabet[0:self.ny] +
+                                  lower_alphabet[0:self.ny])
         except:
             raise Exception("invalid file format")
+
+    def ensure_samp_coord_dimension(self):
+        """Ensures that samp_coord attribute has as the correct dimension.
+
+        len(self.samp_coord) == samps
+        """
+        if len(self.samp_coord) < self.samps:
+            diff = self.samps - len(self.samp_coord)
+            self.samp_coord.extend([[0., 0.] for _ in range(diff)])
 
     def get_subsample_id(self, samp):
         """Returns the subsample name given the subsample index.
@@ -184,7 +191,7 @@ class Config():
         Args:
             samp: An integer representing the subsample within a well
         """
-        return self._Lalphabet[samp]
+        return self._lower_alphabet[samp]
 
     def get_subsample_index(self, letter):
         """Returns the subsample index given the subsample letter.
@@ -199,10 +206,10 @@ class Config():
         Throws:
             Exception if given letter is out of bounds
         """
-        if letter in self._Ualphabet[0:self.samps]:
-            return self._Ualphabet.find(letter)
-        elif letter in self._Lalphabet[0:self.samps]:
-            return self._Lalphabet.find(letter)
+        if letter in self._upper_alphabet[0:self.samps]:
+            return self._upper_alphabet.find(letter)
+        elif letter in self._lower_alphabet[0:self.samps]:
+            return self._lower_alphabet.find(letter)
         else:
             raise Exception("invalid subsample identification")
 

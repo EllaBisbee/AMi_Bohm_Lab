@@ -49,6 +49,8 @@ class Microscope():
             should sit idle before each image
         disable_hard_limits: A Boolean indicating whether to disable
             hard limits of the CNC Machine during RUN only
+        camera_window: 4 Tuple indicate x,y location and width,height of camera
+            window when previewing
     """
     def __init__(self, config, xmax, ymax, zmax, fracbelow, camera_delay):
         """Inits Microscope with given config object"""
@@ -68,6 +70,7 @@ class Microscope():
         self.camera_delay = camera_delay
         self.disable_hard_limits = True
         self.config = config
+        self.camera_window = None
 
         # Camera setup. Change if new camera is purchased
         self.camera = PiCamera()
@@ -135,7 +138,7 @@ class Microscope():
             self.viewing = False
         else:
             self.camera.start_preview(
-                fullscreen=False, window=(0, -76, 1597, 1200)) # TODO: add dynamic window calculation
+                fullscreen=False, window=self.camera_window)
             self.viewing = True
 
     def _in_dev_machine(self):
@@ -167,7 +170,7 @@ class Microscope():
             sleep(1)
             return "<Idle,MPos:0.0,0.0,0.0,WPos:0.0,0.0,0.0>".encode('utf-8')
         else:
-            return self.grbl._wait_for_response()
+            return self.grbl.default_wait_for_response()
 
     def wait_for_idle(self):
         """Waits for Arduino to complete movement

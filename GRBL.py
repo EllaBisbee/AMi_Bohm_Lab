@@ -12,8 +12,8 @@ http://linuxcnc.org/docs/html/gcode.html
 As noted in the URLs above, this interface is based on GRBL v1.1
 """
 
-import serial
 from time import sleep
+import serial
 
 # Real-Time Commands
 CYCLE_START = "~"
@@ -85,25 +85,26 @@ class GRBL():
     def __init__(self, portname, baudrate):
         self.portname = portname
         self.baudrate = baudrate
-        self.s = serial.Serial(self.portname,self.baudrate)
+        self.s = serial.Serial(self.portname, self.baudrate)
+        self.wait_for_response = self._wait_for_response
 
         # Wake up GRBL, wait for GRBL to initialize, and flush startup text
         self.s.write(("\r\n\r\n").encode('utf-8'))
         sleep(2)
         self.s.flushInput()
-    
-    def custom_wait_for_response(self, cb=None):
+
+    def custom_wait_for_response(self, closure=None):
         """Specify custom method for waiting for a response from grbl.
 
         Replaces the built-in method for waiting for a response from grbl with
         the function specified. If the specified function is None, it reset
         the object to use the built-in function
-        
+
         Args:
             cb: the custom method to use
         """
-        if cb:
-            self.wait_for_response = cb
+        if closure is not None:
+            self.wait_for_response = closure
         else:
             self.wait_for_response = self._wait_for_response
 
@@ -116,17 +117,22 @@ class GRBL():
         """
         return self.s.readline()
 
+    def default_wait_for_response(self):
+        """Method linking to the default wait for response function
+        """
+        return self._wait_for_response()
+
     def _send_settings_message(self, code, val):
         """Writes a settings ($) message to the serial port
 
-        Send a settings message to the serial port and waits for a 
+        Send a settings message to the serial port and waits for a
         response. Returns the response.
 
         Args:
             code: the $x setting code
             val: value to set the code to
         """
-        self.s.write(("${}={} \n").format(code,val).encode("utf-8"))
+        self.s.write(("${}={} \n").format(code, val).encode("utf-8"))
         return self.wait_for_response()
 
     def close(self):
@@ -174,21 +180,21 @@ class GRBL():
         """Returns the [x,y,z] work position as given by GRBL
         """
         response = self.get_current_status().decode('utf-8')
-        response = response.replace(":",",")
-        response = response.replace(">","")
-        response = response.replace("<","")
+        response = response.replace(":", ",")
+        response = response.replace(">", "")
+        response = response.replace("<", "")
         a_list = response.split(",")
-        return [float(a_list[i]) for i in range(6,9)]
+        return [float(a_list[i]) for i in range(6, 9)]
 
     def get_machine_position(self):
         """Returns the [x,y,z] machine position as given by GRBL
         """
         response = self.get_current_status().decode('utf-8')
-        response = response.replace(":",",")
-        response = response.replace(">","")
-        response = response.replace("<","")
+        response = response.replace(":", ",")
+        response = response.replace(">", "")
+        response = response.replace("<", "")
         a_list = response.split(",")
-        return [float(a_list[i]) for i in range(2,4)]
+        return [float(a_list[i]) for i in range(2, 4)]
 
     def set_coordinate_system(self, coord_system, x=None, y=None, z=None):
         """Offsets the origin of the axes ub the coordinate system specified
@@ -204,7 +210,7 @@ class GRBL():
             x: A Float offset for the x-axis
             y: A Float offset for the y-axis
             z: A Float offset for the z-axis
-        
+
         Returns:
             The response from the "wait for response" method
         """
@@ -225,7 +231,7 @@ class GRBL():
         Args:
             mist: Boolean for iocontrol.o.coolant-mist pin (M7)
             flood: Boolean for iocontrol.o.coolant-flood pin (M8)
-        
+
         Returns:
             The response from the "wait for response" method
         """
@@ -250,26 +256,26 @@ class GRBL():
 
         Args:
             x: An Integer revolutions per minute
-        
+
         Returns:
             the response the "wait for response" method
 
         Throws:
             Exception if x < 0
         """
-        assert(x >= 0)
+        assert x >= 0
         self.s.write(('S{} \n').format(x).encode('utf-8'))
         return self.wait_for_response()
 
     def spindle_control(self, clockwise=True, running=True):
         """Controls the spindle.
-        
+
         M3 for clockwise, M3 for counterclockwise, M5 to stop
 
         Args:
             clockwise: Boolean to determine spin direction
             running: Boolean to start/stop the spindle
-        
+
         Returns:
             The response from the "wait for response" method
         """
@@ -289,7 +295,7 @@ class GRBL():
             x: Float motion in the x direction
             y: Float motion in the y direction
             z: Float motion in the z direction
-        
+
         Returns:
             The response from the "wait for response" method
         """
