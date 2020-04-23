@@ -11,6 +11,7 @@ import os
 from datetime import datetime
 from time import sleep
 from shutil import copyfile
+from threading import Thread
 from dotenv import load_dotenv
 import numpy as np
 
@@ -686,7 +687,7 @@ class MovementTool(tk.Frame):
             event: information on the event that triggered this
         """
         self.parent.configurationtool.update_config()
-        # TODO: is there a reason this button doesn't reset corner to None?
+        self._cancel_calibration() # this logic was not in the original code.
         self.parent.messagearea.set_text("")
         newrow = self.parent.microscope.yrow - 1
         if newrow == -1:
@@ -770,6 +771,8 @@ class ImagingControls(tk.Frame):
             self, text="RUN", style="Img-Run.ActvGreen.TButton")
         self.run_btn.bind("<Button-1>", self.run_cb)
         self.run_btn.grid(sticky=fillcell, pady=(5, 0))
+
+        self._thread = None
 
     def _tdate(self):
         """Returns the current date as a nice string
@@ -920,9 +923,8 @@ class ImagingControls(tk.Frame):
             "individual images:" + path1 + "\n" +
             "source "+samp_name+"_process_snap.com to combine z-stack")
 
-    # TODO: convert to async so it can be stopped
-    def run_cb(self, event):
-        """Runs a series of image shots
+    def _run_thread(self, event):
+        """Runs a series of image shots in a separate thread.
 
         Args:
             event: information on the event that triggered this
@@ -956,6 +958,8 @@ class ImagingControls(tk.Frame):
                     yrow, xcol, samp)
                 line = self._take_zstack(imgpath, samp_name, "rawimages")
                 self._append_to_stack_process(processf, samp_name, line)
+            if self.parent.microscope.stopit:
+                break
         self.parent.microscope.running = False
         processf.close()
         # turn off the preview so the monitor can go black when the pi sleeps
@@ -967,6 +971,15 @@ class ImagingControls(tk.Frame):
             self.parent.microscope.grbl.hard_limits(True)
             print('hard limits enabled')
         self.parent.microscope.stopit = False
+
+    def run_cb(self, event):
+        """Runs a series of image shots
+
+        Args:
+            event: information on the event that triggered this
+        """
+        self._thread = Thread(target=self._run_thread, args=[event])
+        self._thread.start()
 
 class MovementAndImaging(tk.Frame):
     """Container for Movement and Imaging
@@ -1240,6 +1253,11 @@ class GUI(tk.Frame):
         self.configurationtool.grid(
             sticky=fill_horizontal, pady=(separationpad, 1), padx=3)
 
+        self.update()
+        self.microscope.camera_window = (
+            0, 0, self.parent.winfo_screenwidth() - self.parent.winfo_width(),
+            self.parent.winfo_screenheight()) # Set camera window size
+
     @staticmethod
     def configure_rows(obj, numrows):
         """Configures rows to resize appropriately when using Grid Manager
@@ -1354,9 +1372,6 @@ def main():
     root.geometry("{}x{}+{}+{}".format(
         root.winfo_width(), root.winfo_height(),
         root.winfo_screenwidth() - root.winfo_width(), 0))
-    frame.microscope.camera_window = (
-        0, 0, root.winfo_screenwidth() - root.winfo_width(),
-        root.winfo_screenheight()) # Set camera window size
     root.mainloop()
 
     # After close

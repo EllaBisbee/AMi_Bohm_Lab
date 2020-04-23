@@ -225,7 +225,7 @@ class Microscope():
         self.wait_for_idle()
         self.mx, self.my, self.mz = self.calculate_machine_position(
             self.xcol, self.yrow, self.samp)
-        print('mx,my,mz', self.mx, self.my, self.mz) # TODO: does this need to be here?
+        print('mx,my,mz', self.mx, self.my, self.mz)
         self.grbl.rapid_move(self.mx, self.my, self.mz)
         self.wait_for_idle()
         return self.mx, self.my, self.mz
