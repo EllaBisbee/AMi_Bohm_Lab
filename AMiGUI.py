@@ -352,7 +352,8 @@ class CalibrationTool(tk.Frame):
             newsamp = self.parent.microscope.samp + 1
             if newsamp == config.samps:
                 newsamp = 1
-            self.corner = str(self.parent.microscope.samp)
+            self.parent.microscope.samp = newsamp
+            self.corner = str(newsamp)
             self.parent.mcoords(0, 0, newsamp)
             self.parent.messagearea.set_text(
                 "SET now changes sub-sample {} coordinates.".format(
