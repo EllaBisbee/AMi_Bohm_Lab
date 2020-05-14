@@ -1288,7 +1288,11 @@ class GUI(tk.Frame):
             fname: name of the configuration file
         """
         try:
-            self.config = Config(fname)
+            if self.config is None:
+                self.config = Config(fname)
+            else:
+                self.config.fname = fname
+                self.config.read()
         except ValueError:
             print("Configuration file does not exist. Creating one...")
             Config.write_default_config("AMi.config")
